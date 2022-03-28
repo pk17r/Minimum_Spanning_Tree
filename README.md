@@ -1,4 +1,4 @@
-C++ for C Programmers Part 1
+Coursera C++ for C Programmers Part 1
 
 Minimum Spanning Tree Algorithm using Prim Algorithm
 
