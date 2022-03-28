@@ -1,8 +1,8 @@
-Coursera C++ for C Programmers Part 1
+<b>Coursera C++ for C Programmers Part 1
 
 Minimum Spanning Tree Algorithm using Prim Algorithm
 
-Homework 3: Compute the minimum spanning tree for an inputted graph
+Homework 3: Compute the minimum spanning tree for an inputted graph</b>
 
 Objective
 
