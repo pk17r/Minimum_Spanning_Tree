@@ -2,7 +2,7 @@
 // C++ for C Programmers Part 1
 // Week 4 Peer Graded Assignment Homework
 //
-// Minimum Spanning Tree Algorithm
+// Minimum Spanning Tree Algorithm using Prim Algorithm
 // 
 //
 // Prashant Kumar
