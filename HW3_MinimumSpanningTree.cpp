@@ -32,7 +32,7 @@ struct Neighbor;
 
 //function declarations
 void PrintBox(const string &heading, const string &content);
-void PrintCityDistancesAndPathsToOrigin(const string& heading, const vector<Neighbor>& closed_set, const float& avg_dist_);
+void PrintAllCityDistanceAndPathsToOrigin(const string& heading, const vector<Neighbor>& closed_set, const float& avg_dist_);
 
 struct Neighbor
 {
@@ -57,14 +57,18 @@ struct Neighbor
 struct Edge
 {
     int nodeA{ -1 };
+
     int nodeB{ -1 };
+
     int distance{ -1 };
+
     //default constructor
     Edge()
     {
         times_Edge_default_constructor_is_called++;
         //cout << "~Edge" << *this << endl;
     }
+
     //constructor created to load data from string lines in input file
     Edge(string &str)
     {
@@ -97,6 +101,7 @@ struct Edge
         }
         //cout << "Edge(string &str)" << *this << endl;
     }
+
     //copy constructor, to keep track of unnecessary copies being created by program
     //https://stackoverflow.com/questions/515071/destructor-called-on-object-when-adding-it-to-stdlist
     Edge(Edge const& edge) : nodeA(edge.nodeA), nodeB(edge.nodeB), distance(edge.distance)
@@ -104,11 +109,13 @@ struct Edge
         times_Edge_copy_constructor_is_called++;
         cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
     }
+
     ~Edge()
     {
         times_Edge_default_destructor_is_called++;
         //cout << "~Edge" << *this << endl;
     }
+
     //friend allows the << operator to have access to information in the object so it can overload normal cout <<.
     //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
     friend ostream& operator<<(ostream& os, const Edge& edge)
@@ -122,30 +129,30 @@ struct Edge
     //defining a static read data function to be called from CityGraph class
     static int ReadData(string& data_file_name, list<Edge*>& edgeList)
     {
-        PrintBox("Read Data", "");
+        PrintBox("Read Data from File", "");
         cout << "Reading file: " << data_file_name << endl;
         ifstream dataFile(data_file_name);
         istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
         string buffer;
-        int size = -1;
+        int graphSize = -1;
         while (start_of_file != end_of_file)
         {
             buffer += *start_of_file;
             if (*start_of_file == '\n')
             {
-                if (size == -1)
-                    size = stoi(buffer);
+                if (graphSize == -1)
+                    graphSize = stoi(buffer);
                 else
                     edgeList.push_back(new Edge(buffer));
                 buffer.clear();
             }
             ++start_of_file;
         }
-        cout << "Graph Size: " << size << endl;
+        cout << "Graph Size: " << graphSize << endl;
         cout << "Size of edgeList: " << edgeList.size() << endl;
         cout << "First Edge: " << *edgeList.front() << endl;
         cout << "Last Edge: " << *edgeList.back() << endl;
-        return size;
+        return graphSize;
     }
 
     //static function to erase Edge data from memory
@@ -155,6 +162,7 @@ struct Edge
             delete edge;
         edgeList.clear();
 
+        //a check for memory leaks and copy constructor calls
         if (times_Edge_default_destructor_is_called == times_Edge_string_input_constructor_is_called
             && times_Edge_default_constructor_is_called == 0
             && times_Edge_copy_constructor_is_called == 0)
@@ -166,6 +174,7 @@ struct Edge
         }
     }
 };
+
 class CityGraph 
 {
     bool** city_connectivity_matrix_;
@@ -223,12 +232,12 @@ public:
         PrintCityMatrixFn(false);
 
         //call avg distance to origin city method
-        AvgPathLengthUsingDijkstrasAlgorithm();
+        DijkstrasAlgorithmImplementation();
     }
+
     //destructor
     ~CityGraph() 
     {
-        cout << "~CityGraph()" << endl;
         for (int i = 0; i < size_; i++) 
         {
             delete[] city_connectivity_matrix_[i];
@@ -236,11 +245,14 @@ public:
         }
         delete[] city_connectivity_matrix_;
         delete[] city_distance_matrix_;
-        cout << "City Graph with size " << size_ << " deleted.\n" << endl;
+
+        cout << "City Graph with graphSize " << size_ << " deleted.\n" << endl;
     }
+
     void PrintCityMatrixFn(bool printConnectivityMatrix)
     {
         cout << (printConnectivityMatrix ? "Connectivity Matrix:\n\n" : "Distance Matrix:\n\n");
+
         int pages = size_ / kmax_print_columns_to_show_per_page_;
         for (int p = 0; p <= pages; p++)
         {
@@ -271,10 +283,12 @@ public:
             cout << endl;
         }
     }
+
     int get_size_()
     {
         return this->size_;
     }
+
     vector<Neighbor> GetNeighbors(int cityIndex)
     {
         vector<Neighbor> neighborsList;
@@ -288,11 +302,13 @@ public:
         }
         return neighborsList;
     }
+
     int GetNeighborDistance(int cityIndex, int neighborIndex)
     {
         return city_distance_matrix_[cityIndex][neighborIndex];
     }
-    void AvgPathLengthUsingDijkstrasAlgorithm();
+
+    void DijkstrasAlgorithmImplementation();
 };
 
 template <typename T>
@@ -308,31 +324,35 @@ void PrintOpenSet(T p)
     cout << endl;
 }
 
-void CityGraph::AvgPathLengthUsingDijkstrasAlgorithm()
+void CityGraph::DijkstrasAlgorithmImplementation()
 {
-    //define closed and open sets
-    vector<Neighbor> closed_set;
+    //define open set
     //using priority_queue to learn how to use it
     auto cmpFn = [](Neighbor left, Neighbor right) {return left.distance > right.distance; };
     priority_queue<Neighbor, vector<Neighbor>, decltype(cmpFn)> open_set(cmpFn);
 
-    //dijkstras algorithm
-    //add origin city to closed set
+    //define closed set
+    vector<Neighbor> closed_set;
+
+    //Step 1: add origin city to closed set
     closed_set.push_back(Neighbor(0, 0));
-    //add neighbors of origin city to open set
+
+    //Step 2: add neighbors of origin city to open set
     vector<Neighbor> current_neighbors = this->GetNeighbors(0);
     for (Neighbor neighbor_city : current_neighbors)
     {
         neighbor_city.nearest_neighbor_index = 0;
         open_set.push(neighbor_city);
     }
+
     while (open_set.size() > 0)
     {
-        //move nearest city, which is top of open set, to closed set. Call it current city.
+        //Step 3: move nearest city, which is the top member of open set, to closed set. Call it current city.
         Neighbor current_city = open_set.top();
         open_set.pop();
         closed_set.push_back(current_city);
-        //for each neighbor city of current city which is not in closed set
+
+        //Step 4: for each neighbor city of current city which is not in closed set
         current_neighbors = this->GetNeighbors(current_city.index);
         for (Neighbor neighbor_city : current_neighbors)
         {
@@ -343,9 +363,10 @@ void CityGraph::AvgPathLengthUsingDijkstrasAlgorithm()
                     found_neighbor_city_in_closed_set = true;
                     break;
                 }
+
             if (!found_neighbor_city_in_closed_set)
             {
-                //if neighbor city is in open set then update its distance in open set
+                //Step 4a: if neighbor city is in open set then update its distance in open set
                 bool found_neighbor_city_in_open_set = false;
                 vector<Neighbor> open_set_temp;
                 while (!open_set.empty())
@@ -365,7 +386,8 @@ void CityGraph::AvgPathLengthUsingDijkstrasAlgorithm()
                 }
                 for (Neighbor open_set_temp_city : open_set_temp)
                     open_set.push(open_set_temp_city);
-                //if did not find neighbor city in open set then add it to open set
+
+                //Step 4b: if did not find neighbor city in open set then add it to open set
                 if (!found_neighbor_city_in_open_set)
                 {
                     neighbor_city.nearest_neighbor_index = current_city.index;
@@ -376,19 +398,25 @@ void CityGraph::AvgPathLengthUsingDijkstrasAlgorithm()
             }
         }
     }
+    //dijkstras algoritm completed
+
     //calculate sum of distances of cities to origin city
     for (Neighbor city : closed_set)
         this->avg_dist_ += static_cast<float>(city.distance) / (closed_set.size() - 1);
-    PrintCityDistancesAndPathsToOrigin("Dijkstras Algorithm Nearest City Paths and Distance to Origin", closed_set, this->avg_dist_);
+
+    PrintAllCityDistanceAndPathsToOrigin("Dijkstras Algorithm Nearest City Paths and Distance to Origin", closed_set, this->avg_dist_);
 }
 
-void PrintCityDistancesAndPathsToOrigin(const string& heading, const vector<Neighbor> &closed_set, const float &avg_dist_)
+void PrintAllCityDistanceAndPathsToOrigin(const string& heading, const vector<Neighbor> &closed_set, const float &avg_dist_)
 {
     PrintBox(heading, "");
+
     cout << "##  ( City # | Shortest distance to origin city )  ->  Shortest Path" << endl;
+
     int cityCount = -1;
     for (Neighbor city : closed_set)
     {
+        //print city and distance to origin
         ++cityCount;
         if (city.nearest_neighbor_index >= 0)
             printf("%2d  ( %3d | %2d )", cityCount, city.index, city.distance);
@@ -397,7 +425,8 @@ void PrintCityDistancesAndPathsToOrigin(const string& heading, const vector<Neig
             printf("%2d  (  origin  )\n", cityCount);
             continue;
         }
-        //print shortest paths to origin city
+
+        //print shortest path to origin city
         Neighbor nearest_city = city;
         do
         {
@@ -413,6 +442,7 @@ void PrintCityDistancesAndPathsToOrigin(const string& heading, const vector<Neig
             else
                 printf("(  origin  )");
         } while (nearest_city.nearest_neighbor_index >= 0);
+
         cout << endl;
     }
     cout << "\nconnected cities " << closed_set.size();
