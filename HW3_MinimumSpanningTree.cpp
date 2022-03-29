@@ -20,20 +20,34 @@
 
 using namespace std;
 
+//static variables
+static int times_Edge_default_constructor_is_called = 0;
+static int times_Edge_string_input_constructor_is_called = 0;
+static int times_Edge_copy_constructor_is_called = 0;
+static int times_Edge_default_destructor_is_called = 0;
+static bool programming_error_found = false;
+
+//struct declarations
+struct Neighbor;
+
+//function declarations
+void PrintBox(const string &heading, const string &content);
+void PrintCityDistancesAndPathsToOrigin(const string& heading, const vector<Neighbor>& closed_set, const float& avg_dist_);
+
 struct Neighbor
 {
     int index = -1;
     int nearest_neighbor_index = -1;
-    float distance = -1;
+    int distance = -1;
     //constructor
-    Neighbor(int index, float distance)
+    Neighbor(int index, int distance)
     {
         this->index = index;
         this->nearest_neighbor_index = -1;
         this->distance = distance;
     }
     //constructor
-    Neighbor(int index, int nearest_neighbor_index, float distance)
+    Neighbor(int index, int nearest_neighbor_index, int distance)
     {
         this->index = index;
         this->nearest_neighbor_index = nearest_neighbor_index;
@@ -45,9 +59,16 @@ struct Edge
     int nodeA{ -1 };
     int nodeB{ -1 };
     int distance{ -1 };
+    //default constructor
+    Edge()
+    {
+        times_Edge_default_constructor_is_called++;
+        //cout << "~Edge" << *this << endl;
+    }
     //constructor created to load data from string lines in input file
     Edge(string &str)
     {
+        times_Edge_string_input_constructor_is_called++;
         /* Storing the whole string into string stream */
         stringstream ss;
         ss << str;
@@ -66,7 +87,11 @@ struct Edge
                 if (nodeA == -1) nodeA = int_found;
                 else if (nodeB == -1) nodeB = int_found;
                 else if (distance == -1) distance = int_found;
-                else cout << "Edge Read Error #1! int_found=" << int_found << endl;
+                else
+                {
+                    cout << "PROGRAMMING ERROR #1: Edge Read int_found=" << int_found << endl;
+                    programming_error_found = true;
+                }
             }
             temp.clear();
         }
@@ -76,10 +101,12 @@ struct Edge
     //https://stackoverflow.com/questions/515071/destructor-called-on-object-when-adding-it-to-stdlist
     Edge(Edge const& edge) : nodeA(edge.nodeA), nodeB(edge.nodeB), distance(edge.distance)
     {
+        times_Edge_copy_constructor_is_called++;
         cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
     }
     ~Edge()
     {
+        times_Edge_default_destructor_is_called++;
         //cout << "~Edge" << *this << endl;
     }
     //friend allows the << operator to have access to information in the object so it can overload normal cout <<.
@@ -89,14 +116,60 @@ struct Edge
         os << "(" << edge.nodeA << ", " << edge.nodeB << ", " << edge.distance << ")";
         return os;
     }
-    
-};
 
+    friend class CityGraph; //making CityGraph class as friend of this struct
+
+    //defining a static read data function to be called from CityGraph class
+    static int ReadData(string& data_file_name, list<Edge*>& edgeList)
+    {
+        PrintBox("Read Data", "");
+        cout << "Reading file: " << data_file_name << endl;
+        ifstream dataFile(data_file_name);
+        istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
+        string buffer;
+        int size = -1;
+        while (start_of_file != end_of_file)
+        {
+            buffer += *start_of_file;
+            if (*start_of_file == '\n')
+            {
+                if (size == -1)
+                    size = stoi(buffer);
+                else
+                    edgeList.push_back(new Edge(buffer));
+                buffer.clear();
+            }
+            ++start_of_file;
+        }
+        cout << "Graph Size: " << size << endl;
+        cout << "Size of edgeList: " << edgeList.size() << endl;
+        cout << "First Edge: " << *edgeList.front() << endl;
+        cout << "Last Edge: " << *edgeList.back() << endl;
+        return size;
+    }
+
+    //static function to erase Edge data from memory
+    static void EraseReadData(list<Edge*>& edgeList)
+    {
+        for (auto edge : edgeList)
+            delete edge;
+        edgeList.clear();
+
+        if (times_Edge_default_destructor_is_called == times_Edge_string_input_constructor_is_called
+            && times_Edge_default_constructor_is_called == 0
+            && times_Edge_copy_constructor_is_called == 0)
+            cout << "Data read from input file efficiently and read data container cleared without memory leaks" << endl;
+        else
+        {
+            cout << "PROGRAMMING ERROR #2: Data NOT read from input file efficiently and read data container cleared without memory leaks" << endl;
+            programming_error_found = true;
+        }
+    }
+};
 class CityGraph 
 {
     bool** city_connectivity_matrix_;
-    float** city_distance_matrix_;
-    int density_ = 0;
+    int** city_distance_matrix_;
     int size_ = -1;
     const int kmax_print_columns_to_show_per_page_ = 13;
     void InitializeCityMatrices()
@@ -104,11 +177,11 @@ class CityGraph
         //heap created 2D array of graph
         //allocate row pointers
         city_connectivity_matrix_ = new bool* [size_];
-        city_distance_matrix_ = new float* [size_];
+        city_distance_matrix_ = new int* [size_];
         //allocate column pointers
         for (int i = 0; i < size_; i++) {
             city_connectivity_matrix_[i] = new bool[size_];
-            city_distance_matrix_[i] = new float[size_];
+            city_distance_matrix_[i] = new int[size_];
         }
         //initialize default values
         for (int i = 0; i < size_; i++)
@@ -118,48 +191,13 @@ class CityGraph
                 city_distance_matrix_[i][j] = 0;
             }
     }
-    void GenerateConnectivityAndDistanceMatrix() 
+    void PopulateCityMatrices(list<Edge*>& edgeList)
     {
-        InitializeCityMatrices();
-        srand(static_cast<unsigned int>(time(0))); //seed time
-        for (int i = 0; i < size_; i++)
-            for (int j = 0; j < size_; j++)
-                if (i != j) 
-                {
-                    city_connectivity_matrix_[i][j] = city_connectivity_matrix_[j][i] = (rand() % 100 <= density_ ? true : false);
-                    if (city_connectivity_matrix_[i][j])
-                    {
-                        //give random distance values between 1.0 to 10.0
-                        int randVal = rand() / 100;
-                        int randMax = RAND_MAX / 100;
-                        city_distance_matrix_[i][j] = city_distance_matrix_[j][i] = static_cast<float>(90 * randVal / randMax) / 10 + 1;
-                    }
-                }
-    }
-    void ReadData(string &data_file_name, list<Edge*> &edgeList)
-    {
-        cout << "\n*** Read Data ***\n" << endl;
-        cout << "Reading file: " << data_file_name << endl;
-        ifstream dataFile(data_file_name);
-        istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
-        string buffer;
-        while (start_of_file != end_of_file)
+        for (auto edge : edgeList)
         {
-            buffer += *start_of_file;
-            if (*start_of_file == '\n')
-            {
-                if (this->size_ == -1)
-                    this->size_ = stoi(buffer);
-                else
-                    edgeList.push_back(new Edge(buffer));
-                buffer.clear();
-            }
-            ++start_of_file;
+            city_connectivity_matrix_[edge->nodeA][edge->nodeB] = city_connectivity_matrix_[edge->nodeB][edge->nodeA] = 1;
+            city_distance_matrix_[edge->nodeA][edge->nodeB] = city_distance_matrix_[edge->nodeB][edge->nodeA] = static_cast<int>(edge->distance);
         }
-        cout << "Graph Size: " << size_ << endl;
-        cout << "Size of edgeList: " << edgeList.size() << endl;
-        cout << "First Edge: " << *edgeList.front() << endl;
-        cout << "Last Edge: " << *edgeList.back() << endl;
     }
 public:
     float avg_dist_ = 0;
@@ -167,59 +205,23 @@ public:
     CityGraph()
     {
         string data_file_name = "cplusplus4c_homeworks_Homework3_SampleTestData_mst_data.txt";
-        list<Edge*> edgeList;
-        ReadData(data_file_name, edgeList);
-        for (auto edge : edgeList)
-            delete edge;
-        edgeList.clear();
-        
-        return;
 
-        this->size_ = 9;
-        this->density_ = 0;
-        cout << "Test Data City Graph with size " << size_ << endl << endl;
+        //read input file data into a temporary list
+        list<Edge*> edgeList;
+        this->size_ = Edge::ReadData(data_file_name, edgeList);
+
+        //Initialize and populate matrices
         InitializeCityMatrices();
-        //test dataset for half matrix
-        cout << "Implementing graph shown here https ://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-greedy-algo-7/" << endl << endl;
-        city_connectivity_matrix_[0][1] = true;
-        city_connectivity_matrix_[0][7] = true;
-        city_connectivity_matrix_[1][2] = true;
-        city_connectivity_matrix_[1][7] = true;
-        city_connectivity_matrix_[7][8] = true;
-        city_connectivity_matrix_[2][3] = true;
-        city_connectivity_matrix_[2][8] = true;
-        city_connectivity_matrix_[2][5] = true;
-        city_connectivity_matrix_[6][7] = true;
-        city_connectivity_matrix_[6][8] = true;
-        city_connectivity_matrix_[5][6] = true;
-        city_connectivity_matrix_[3][4] = true;
-        city_connectivity_matrix_[3][5] = true;
-        city_connectivity_matrix_[4][5] = true;
-        city_distance_matrix_[0][1] = 4;
-        city_distance_matrix_[0][7] = 8;
-        city_distance_matrix_[1][2] = 8;
-        city_distance_matrix_[1][7] = 11;
-        city_distance_matrix_[7][8] = 7;
-        city_distance_matrix_[2][3] = 7;
-        city_distance_matrix_[2][8] = 2;
-        city_distance_matrix_[2][5] = 4;
-        city_distance_matrix_[6][7] = 1;
-        city_distance_matrix_[6][8] = 6;
-        city_distance_matrix_[5][6] = 2;
-        city_distance_matrix_[3][4] = 9;
-        city_distance_matrix_[3][5] = 14;
-        city_distance_matrix_[4][5] = 10;
-        //mirror matrices across diagnal
-        for (int i = 0; i < size_; i++)
-            for (int j = 0; j < size_; j++)
-                if (i < j) 
-                {
-                    city_connectivity_matrix_[j][i] = city_connectivity_matrix_[i][j];
-                    city_distance_matrix_[j][i] = city_distance_matrix_[i][j];
-                }
+        PopulateCityMatrices(edgeList);
+
+        //clear edgeList
+        Edge::EraseReadData(edgeList);
+
         //print connectivity matrix
-        PrintCityConnectivityMatrix();
-        PrintCityDistanceMatrix();
+        PrintBox("Connectivity and Distance Matrices", "");
+        PrintCityMatrixFn(true);
+        PrintCityMatrixFn(false);
+
         //call avg distance to origin city method
         AvgPathLengthUsingDijkstrasAlgorithm();
     }
@@ -227,7 +229,6 @@ public:
     ~CityGraph() 
     {
         cout << "~CityGraph()" << endl;
-        return;
         for (int i = 0; i < size_; i++) 
         {
             delete[] city_connectivity_matrix_[i];
@@ -235,72 +236,40 @@ public:
         }
         delete[] city_connectivity_matrix_;
         delete[] city_distance_matrix_;
-        cout << "City Graph with size " << size_;
-        if(density_ > 0) cout << " and density " << density_;
-        cout << " deleted.\n" << endl;
+        cout << "City Graph with size " << size_ << " deleted.\n" << endl;
     }
-    void PrintCityConnectivityMatrix()
+    void PrintCityMatrixFn(bool printConnectivityMatrix)
     {
+        cout << (printConnectivityMatrix ? "Connectivity Matrix:\n\n" : "Distance Matrix:\n\n");
         int pages = size_ / kmax_print_columns_to_show_per_page_;
         for (int p = 0; p <= pages; p++)
         {
-            cout << "Edge:\t";
-            for (int i = p * kmax_print_columns_to_show_per_page_; i < min(size_ , (p + 1) * kmax_print_columns_to_show_per_page_); i++)
-                cout << "|   " << i << "\t";
+            cout << "Cities:\t";
+            for (int i = p * kmax_print_columns_to_show_per_page_; i < min(size_, (p + 1) * kmax_print_columns_to_show_per_page_); i++)
+                printf("|  %2d\t", i);
             cout << endl << "--------";
             for (int i = p * kmax_print_columns_to_show_per_page_; i < min(size_, (p + 1) * kmax_print_columns_to_show_per_page_); i++)
                 cout << "|-------";
             cout << endl;
-            for (int i = 0; i < size_; i++) 
+            for (int i = 0; i < size_; i++)
             {
                 cout << "   " << i << "\t";
                 for (int j = p * kmax_print_columns_to_show_per_page_; j < min(size_, (p + 1) * kmax_print_columns_to_show_per_page_); j++)
-                    if (i != j)
-                        cout << "|    " << city_connectivity_matrix_[i][j] << "\t";
-                    else
-                        cout << "|    -\t";
-                cout << endl;
-            }
-            cout << endl;
-        }
-    }
-    void PrintCityDistanceMatrix()
-    {
-        int pages = size_ / kmax_print_columns_to_show_per_page_;
-        for (int p = 0; p <= pages; p++)
-        {
-            cout << "Dist:\t";
-            for (int i = p * kmax_print_columns_to_show_per_page_; i < min(size_, (p + 1) * kmax_print_columns_to_show_per_page_); i++)
-                cout << "|   " << i << "\t";
-            cout << endl << "--------";
-            for (int i = p * kmax_print_columns_to_show_per_page_; i < min(size_, (p + 1) * kmax_print_columns_to_show_per_page_); i++)
-                cout << "|-------";
-            cout << endl;
-            for (int i = 0; i < size_; i++) 
-            {
-                cout << "   " << i << "\t";
-                for (int j = p * kmax_print_columns_to_show_per_page_; j < min(size_, (p + 1) * kmax_print_columns_to_show_per_page_); j++) 
                 {
                     cout << "|  ";
                     if (i == j)
-                        printf("  -");
-                    else if (city_distance_matrix_[i][j] != 0)
-                        if (city_distance_matrix_[i][j] >= 10)
-                            printf("%0.1f", city_distance_matrix_[i][j]);
+                        printf(" -");
+                    else if (city_connectivity_matrix_[i][j])
+                        if(printConnectivityMatrix)
+                            cout << " E";
                         else
-                            printf("%0.1f ", city_distance_matrix_[i][j]);
-                    else
-                        printf("  0");
+                            printf("%2d", city_distance_matrix_[i][j]);
                     cout << "\t";
                 }
                 cout << endl;
             }
             cout << endl;
         }
-    }
-    int get_density_()
-    {
-        return this->density_;
     }
     int get_size_()
     {
@@ -319,7 +288,7 @@ public:
         }
         return neighborsList;
     }
-    float GetNeighborDistance(int cityIndex, int neighborIndex)
+    int GetNeighborDistance(int cityIndex, int neighborIndex)
     {
         return city_distance_matrix_[cityIndex][neighborIndex];
     }
@@ -408,20 +377,29 @@ void CityGraph::AvgPathLengthUsingDijkstrasAlgorithm()
         }
     }
     //calculate sum of distances of cities to origin city
-    cout << "Dijkstras Algorithm Nearest City Paths and Distance to Origin:" << endl;
+    for (Neighbor city : closed_set)
+        this->avg_dist_ += static_cast<float>(city.distance) / (closed_set.size() - 1);
+    PrintCityDistancesAndPathsToOrigin("Dijkstras Algorithm Nearest City Paths and Distance to Origin", closed_set, this->avg_dist_);
+}
+
+void PrintCityDistancesAndPathsToOrigin(const string& heading, const vector<Neighbor> &closed_set, const float &avg_dist_)
+{
+    PrintBox(heading, "");
+    cout << "##  ( City # | Shortest distance to origin city )  ->  Shortest Path" << endl;
+    int cityCount = -1;
     for (Neighbor city : closed_set)
     {
-        this->avg_dist_ += city.distance / (closed_set.size() - 1);
-        if(city.nearest_neighbor_index >= 0)
-            printf("( %2d | %0.1f )", city.index, city.distance);
+        ++cityCount;
+        if (city.nearest_neighbor_index >= 0)
+            printf("%2d  ( %3d | %2d )", cityCount, city.index, city.distance);
         else
         {
-            printf("(  origin  )\n");
+            printf("%2d  (  origin  )\n", cityCount);
             continue;
         }
         //print shortest paths to origin city
         Neighbor nearest_city = city;
-        do 
+        do
         {
             for (Neighbor next_city : closed_set)
                 if (next_city.index == nearest_city.nearest_neighbor_index)
@@ -430,39 +408,73 @@ void CityGraph::AvgPathLengthUsingDijkstrasAlgorithm()
                     break;
                 }
             cout << "  ->  ";
-            if(nearest_city.nearest_neighbor_index >= 0)
-                printf("( %2d | %0.1f )", nearest_city.index, nearest_city.distance);
+            if (nearest_city.nearest_neighbor_index >= 0)
+                printf("( %3d | %2d )", nearest_city.index, nearest_city.distance);
             else
                 printf("(  origin  )");
         } while (nearest_city.nearest_neighbor_index >= 0);
         cout << endl;
     }
-    cout << "(connected cities " << closed_set.size();
-    printf(" | avg path length %0.2f )\n\n\n", this->avg_dist_);
+    cout << "\nconnected cities " << closed_set.size();
+    printf(" | avg path length %0.2f\n\n", avg_dist_);
 }
 
-void printResultLine(CityGraph& city_graph_object)
+void PrintBox(const string &heading, const string &content)
 {
-    printf("*\t%d\t|\t%d\t|\t%.2f\t*\n", city_graph_object.get_size_(), city_graph_object.get_density_(), city_graph_object.avg_dist_);
+    //making sure it is even number
+    int headerSize = heading.size() + heading.size() % 2;
+    int contentSize = content.size() + content.size() % 2;
+    
+    int boxContentSize = max(headerSize, contentSize);
+    int sideBannerSize = 5;
+    string borderLine = "*";
+    string emptyLine = "*";
+    for (int i = 0; i < sideBannerSize + boxContentSize + sideBannerSize; i++)
+    {
+        borderLine.append("*");
+        emptyLine.append(" ");
+    }
+    borderLine.append("*");
+    emptyLine.append("*");
+
+    cout << endl << endl;
+    cout << borderLine << endl;
+    cout << emptyLine << endl;
+    cout << "*";
+    for (int i = 0; i < sideBannerSize + (boxContentSize - headerSize) / 2; i++) cout << " ";
+    cout << heading << (heading.size() % 2 == 1 ? " " : "");
+    for (int i = 0; i < sideBannerSize + (boxContentSize - headerSize) / 2; i++) cout << " ";
+    cout << "*" << endl;
+    cout << emptyLine << endl;
+    if (content.size() > 0)
+    {
+        cout << "*";
+        for (int i = 0; i < sideBannerSize + (boxContentSize - contentSize) / 2; i++) cout << " ";
+        cout << content << (content.size() % 2 == 1 ? " " : "");;
+        for (int i = 0; i < sideBannerSize + (boxContentSize - contentSize) / 2; i++) cout << " ";
+        cout << "*" << endl;
+        cout << emptyLine << endl;
+    }
+    cout << borderLine << endl;
+    cout << endl;
 }
 
-int main() 
+int main()
 {
-    cout << "\n**** Avg Path Length Using Dijkstras Algorithm ****" << endl << endl;
+    PrintBox("Avg Path Length Using Dijkstras Algorithm", "");
+
     //test dataset
     CityGraph city_graph_object;
 
-    return 0;
-
     //print results
-    cout << endl << endl;
-    for (int i = 0; i < 6; i++) cout << "********";
-    cout << "*" << endl;
-    cout << "*   Results of Randomly Generated City Graphs\t*" << endl;
-    cout << "*      size\t|     density\t|     avg dist\t*" << endl;
-    printResultLine(city_graph_object);
-    for (int i = 0; i < 6; i++) cout << "********";
-    cout << "*" << endl << endl;
+    string avg_dist_string(6, '\0');
+    auto written = snprintf(&avg_dist_string[0], avg_dist_string.size(), "%.2f", city_graph_object.avg_dist_);
+    avg_dist_string.resize(written);
+    string result_content = "Using Dijkstra's average distance: " + avg_dist_string;
+    PrintBox("RESULTS", result_content);
+    
+    if (programming_error_found)
+        cout << "******** PROGRAMMING ERROR FOUND ********\n\n";
 
     return 0;
 }
