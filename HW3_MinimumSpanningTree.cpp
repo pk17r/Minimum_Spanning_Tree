@@ -10,6 +10,7 @@
 // 
 
 #include <iostream>
+#include <limits>
 #include "GeneralPrintFunctions.h"
 #include "CityGraph.h"
 
@@ -21,13 +22,16 @@ int main()
 
     //test dataset
     CityGraph city_graph_object;
-
+    
     //print results
-    string avg_dist_string(6, '\0');
-    auto written = snprintf(&avg_dist_string[0], avg_dist_string.size(), "%.2f", city_graph_object.avg_dist_);
-    avg_dist_string.resize(written);
-    string result_content = "Using Dijkstra's average distance: " + avg_dist_string;
-    GeneralPrintFunctions::PrintBox("RESULTS", result_content);
+    auto float_to_formatted_string_lambda_fn = [=](float avg_dist)
+    {
+        char avg_dist_formatted_char_array[10]; //giving max value avg_dist_formatted_char_array can carry to be 999999.99\0, thereby assuming upper limit of avg_dist to be 999999.x
+        if(sprintf_s(avg_dist_formatted_char_array, "%.2f", avg_dist) < 0)
+            GeneralPrintFunctions::PrintErrorBox("ERROR", "Could not convert float to char array");
+        return string(avg_dist_formatted_char_array);
+    };
+    GeneralPrintFunctions::PrintBox("RESULTS", "Using Dijkstra's average distance: " + string(float_to_formatted_string_lambda_fn(city_graph_object.avg_dist_)));
     
     return 0;
 }
