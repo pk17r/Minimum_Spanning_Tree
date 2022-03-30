@@ -17,163 +17,14 @@
 #include <time.h>
 #include <sstream>
 #include <list>
+#include "PrintFunctions.h"
+#include "Edge.h"
+#include "Neighbor.h"
 
 using namespace std;
 
 //static variables
-static int times_Edge_default_constructor_is_called = 0;
-static int times_Edge_string_input_constructor_is_called = 0;
-static int times_Edge_copy_constructor_is_called = 0;
-static int times_Edge_default_destructor_is_called = 0;
 static bool programming_error_found = false;
-
-//struct declarations
-struct Neighbor;
-
-//function declarations
-void PrintBox(const string &heading, const string &content);
-void PrintAllCityDistanceAndPathsToOrigin(const string& heading, const vector<Neighbor>& closed_set, const float& avg_dist_);
-
-struct Neighbor
-{
-    int index = -1;
-    int nearest_neighbor_index = -1;
-    int distance = -1;
-    //constructor
-    Neighbor(int index, int distance)
-    {
-        this->index = index;
-        this->nearest_neighbor_index = -1;
-        this->distance = distance;
-    }
-    //constructor
-    Neighbor(int index, int nearest_neighbor_index, int distance)
-    {
-        this->index = index;
-        this->nearest_neighbor_index = nearest_neighbor_index;
-        this->distance = distance;
-    }
-};
-struct Edge
-{
-    int nodeA{ -1 };
-
-    int nodeB{ -1 };
-
-    int distance{ -1 };
-
-    //default constructor
-    Edge()
-    {
-        times_Edge_default_constructor_is_called++;
-        //cout << "~Edge" << *this << endl;
-    }
-
-    //constructor created to load data from string lines in input file
-    Edge(string &str)
-    {
-        times_Edge_string_input_constructor_is_called++;
-        /* Storing the whole string into string stream */
-        stringstream ss;
-        ss << str;
-
-        /* Running loop till the end of the stream */
-        string temp;
-        int int_found;
-        while (!ss.eof()) {
-
-            /* extracting word by word from stream */
-            ss >> temp;
-
-            /* Checking the given word is integer or not */
-            if (stringstream(temp) >> int_found)
-            {
-                if (nodeA == -1) nodeA = int_found;
-                else if (nodeB == -1) nodeB = int_found;
-                else if (distance == -1) distance = int_found;
-                else
-                {
-                    cout << "PROGRAMMING ERROR #1: Edge Read int_found=" << int_found << endl;
-                    programming_error_found = true;
-                }
-            }
-            temp.clear();
-        }
-        //cout << "Edge(string &str)" << *this << endl;
-    }
-
-    //copy constructor, to keep track of unnecessary copies being created by program
-    //https://stackoverflow.com/questions/515071/destructor-called-on-object-when-adding-it-to-stdlist
-    Edge(Edge const& edge) : nodeA(edge.nodeA), nodeB(edge.nodeB), distance(edge.distance)
-    {
-        times_Edge_copy_constructor_is_called++;
-        cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
-    }
-
-    ~Edge()
-    {
-        times_Edge_default_destructor_is_called++;
-        //cout << "~Edge" << *this << endl;
-    }
-
-    //friend allows the << operator to have access to information in the object so it can overload normal cout <<.
-    //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
-    friend ostream& operator<<(ostream& os, const Edge& edge)
-    {
-        os << "(" << edge.nodeA << ", " << edge.nodeB << ", " << edge.distance << ")";
-        return os;
-    }
-
-    friend class CityGraph; //making CityGraph class as friend of this struct
-
-    //defining a static read data function to be called from CityGraph class
-    static int ReadData(string& data_file_name, list<Edge*>& edgeList)
-    {
-        PrintBox("Read Data from File", "");
-        cout << "Reading file: " << data_file_name << endl;
-        ifstream dataFile(data_file_name);
-        istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
-        string buffer;
-        int graphSize = -1;
-        while (start_of_file != end_of_file)
-        {
-            buffer += *start_of_file;
-            if (*start_of_file == '\n')
-            {
-                if (graphSize == -1)
-                    graphSize = stoi(buffer);
-                else
-                    edgeList.push_back(new Edge(buffer));
-                buffer.clear();
-            }
-            ++start_of_file;
-        }
-        cout << "Graph Size: " << graphSize << endl;
-        cout << "Size of edgeList: " << edgeList.size() << endl;
-        cout << "First Edge: " << *edgeList.front() << endl;
-        cout << "Last Edge: " << *edgeList.back() << endl;
-        return graphSize;
-    }
-
-    //static function to erase Edge data from memory
-    static void EraseReadData(list<Edge*>& edgeList)
-    {
-        for (auto edge : edgeList)
-            delete edge;
-        edgeList.clear();
-
-        //a check for memory leaks and copy constructor calls
-        if (times_Edge_default_destructor_is_called == times_Edge_string_input_constructor_is_called
-            && times_Edge_default_constructor_is_called == 0
-            && times_Edge_copy_constructor_is_called == 0)
-            cout << "Data read from input file efficiently and read data container cleared without memory leaks" << endl;
-        else
-        {
-            cout << "PROGRAMMING ERROR #2: Data NOT read from input file efficiently and read data container cleared without memory leaks" << endl;
-            programming_error_found = true;
-        }
-    }
-};
 
 class CityGraph 
 {
@@ -224,10 +75,10 @@ public:
         PopulateCityMatrices(edgeList);
 
         //clear edgeList
-        Edge::EraseReadData(edgeList);
+        programming_error_found = Edge::EraseReadData(edgeList);
 
         //print connectivity matrix
-        PrintBox("Connectivity and Distance Matrices", "");
+        PrintBox("Connectivity and Distance Matrices");
         PrintCityMatrixFn(true);
         PrintCityMatrixFn(false);
 
@@ -310,19 +161,6 @@ public:
 
     void DijkstrasAlgorithmImplementation();
 };
-
-template <typename T>
-void PrintOpenSet(T p)
-{
-    T q = p;
-    cout << "Open Set: ";
-    while (!q.empty())
-    {
-        cout << '\t' << static_cast<Neighbor>(q.top()).distance;
-        q.pop();
-    }
-    cout << endl;
-}
 
 void CityGraph::DijkstrasAlgorithmImplementation()
 {
@@ -407,91 +245,9 @@ void CityGraph::DijkstrasAlgorithmImplementation()
     PrintAllCityDistanceAndPathsToOrigin("Dijkstras Algorithm Nearest City Paths and Distance to Origin", closed_set, this->avg_dist_);
 }
 
-void PrintAllCityDistanceAndPathsToOrigin(const string& heading, const vector<Neighbor> &closed_set, const float &avg_dist_)
-{
-    PrintBox(heading, "");
-
-    cout << "##  ( City # | Shortest distance to origin city )  ->  Shortest Path" << endl;
-
-    int cityCount = -1;
-    for (Neighbor city : closed_set)
-    {
-        //print city and distance to origin
-        ++cityCount;
-        if (city.nearest_neighbor_index >= 0)
-            printf("%2d  ( %3d | %2d )", cityCount, city.index, city.distance);
-        else
-        {
-            printf("%2d  (  origin  )\n", cityCount);
-            continue;
-        }
-
-        //print shortest path to origin city
-        Neighbor nearest_city = city;
-        do
-        {
-            for (Neighbor next_city : closed_set)
-                if (next_city.index == nearest_city.nearest_neighbor_index)
-                {
-                    nearest_city = next_city;
-                    break;
-                }
-            cout << "  ->  ";
-            if (nearest_city.nearest_neighbor_index >= 0)
-                printf("( %3d | %2d )", nearest_city.index, nearest_city.distance);
-            else
-                printf("(  origin  )");
-        } while (nearest_city.nearest_neighbor_index >= 0);
-
-        cout << endl;
-    }
-    cout << "\nconnected cities " << closed_set.size();
-    printf(" | avg path length %0.2f\n\n", avg_dist_);
-}
-
-void PrintBox(const string &heading, const string &content)
-{
-    //making sure it is even number
-    int headerSize = heading.size() + heading.size() % 2;
-    int contentSize = content.size() + content.size() % 2;
-    
-    int boxContentSize = max(headerSize, contentSize);
-    int sideBannerSize = 5;
-    string borderLine = "*";
-    string emptyLine = "*";
-    for (int i = 0; i < sideBannerSize + boxContentSize + sideBannerSize; i++)
-    {
-        borderLine.append("*");
-        emptyLine.append(" ");
-    }
-    borderLine.append("*");
-    emptyLine.append("*");
-
-    cout << endl << endl;
-    cout << borderLine << endl;
-    cout << emptyLine << endl;
-    cout << "*";
-    for (int i = 0; i < sideBannerSize + (boxContentSize - headerSize) / 2; i++) cout << " ";
-    cout << heading << (heading.size() % 2 == 1 ? " " : "");
-    for (int i = 0; i < sideBannerSize + (boxContentSize - headerSize) / 2; i++) cout << " ";
-    cout << "*" << endl;
-    cout << emptyLine << endl;
-    if (content.size() > 0)
-    {
-        cout << "*";
-        for (int i = 0; i < sideBannerSize + (boxContentSize - contentSize) / 2; i++) cout << " ";
-        cout << content << (content.size() % 2 == 1 ? " " : "");;
-        for (int i = 0; i < sideBannerSize + (boxContentSize - contentSize) / 2; i++) cout << " ";
-        cout << "*" << endl;
-        cout << emptyLine << endl;
-    }
-    cout << borderLine << endl;
-    cout << endl;
-}
-
 int main()
 {
-    PrintBox("Avg Path Length Using Dijkstras Algorithm", "");
+    PrintBox("Avg Path Length Using Dijkstras Algorithm");
 
     //test dataset
     CityGraph city_graph_object;
@@ -504,7 +260,7 @@ int main()
     PrintBox("RESULTS", result_content);
     
     if (programming_error_found)
-        cout << "******** PROGRAMMING ERROR FOUND ********\n\n";
+        PrintBox("PROGRAMMING ERROR FOUND", "Look deeper to know where", true);
 
     return 0;
 }
