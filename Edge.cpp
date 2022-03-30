@@ -5,7 +5,7 @@
 #include <sstream>
 #include <list>
 #include "Edge.h"
-#include "PrintFunctions.h"
+#include "GeneralPrintFunctions.h"
 
 using namespace std;
 
@@ -17,11 +17,10 @@ static int times_Edge_default_destructor_is_called = 0;
 static bool programming_error_found = false;
 
 //default constructor
-Edge::Edge()
-{
-    times_Edge_default_constructor_is_called++;
-    //cout << "~Edge" << *this << endl;
-}
+Edge::Edge() { times_Edge_default_constructor_is_called++; }
+
+//default destructor
+Edge::~Edge() { times_Edge_default_destructor_is_called++; }
 
 //constructor created to load data from string lines in input file
 Edge::Edge(string& str)
@@ -47,7 +46,7 @@ Edge::Edge(string& str)
             else if (distance == -1) distance = int_found;
             else
             {
-                cout << "PROGRAMMING ERROR #1: Edge Read int_found=" << int_found << endl;
+                GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR #1", "Edge Read int_found=" + to_string(int_found));
                 programming_error_found = true;
             }
         }
@@ -64,16 +63,10 @@ Edge::Edge(Edge const& edge) : nodeA(edge.nodeA), nodeB(edge.nodeB), distance(ed
     cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
 }
 
-Edge::~Edge()
-{
-    times_Edge_default_destructor_is_called++;
-    //cout << "~Edge" << *this << endl;
-}
-
 //defining a static read data function to be called from CityGraph class
 int Edge::ReadData(string& data_file_name, list<Edge*>& edgeList)
 {
-    PrintBox("Read Data from File");
+    GeneralPrintFunctions::PrintBox("Read Data from File");
     cout << "Reading file: " << data_file_name << endl;
     ifstream dataFile(data_file_name);
     istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
@@ -104,6 +97,7 @@ bool Edge::EraseReadData(list<Edge*>& edgeList)
 {
     for (auto edge : edgeList)
         delete edge;
+
     edgeList.clear();
 
     //a check for memory leaks and copy constructor calls
@@ -119,7 +113,7 @@ bool Edge::EraseReadData(list<Edge*>& edgeList)
 
     if (programming_error_found)
     {
-        PrintBox("PROGRAMMING ERROR FOUND", "Programming error was found in Edge.cpp", true);
+        GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR FOUND", "Programming error was found in Edge.cpp");
     }
 
     //return bool entry of programming errors found in this cpp file.
