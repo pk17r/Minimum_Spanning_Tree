@@ -5,7 +5,7 @@
 #include <sstream>
 #include <list>
 #include "Edge.h"
-#include "GeneralPrintFunctions.h"
+#include "General_Print_Functions.h"
 
 using namespace std;
 
@@ -41,8 +41,8 @@ Edge::Edge(string& str)
         /* Checking the given word is integer or not */
         if (stringstream(temp) >> int_found)
         {
-            if (nodeA == -1) nodeA = int_found;
-            else if (nodeB == -1) nodeB = int_found;
+            if (node_A == -1) node_A = int_found;
+            else if (node_B == -1) node_B = int_found;
             else if (distance == -1) distance = int_found;
             else
             {
@@ -57,7 +57,7 @@ Edge::Edge(string& str)
 
 //copy constructor, to keep track of unnecessary copies being created by program
 //https://stackoverflow.com/questions/515071/destructor-called-on-object-when-adding-it-to-stdlist
-Edge::Edge(Edge const& edge) : nodeA(edge.nodeA), nodeB(edge.nodeB), distance(edge.distance)
+Edge::Edge(Edge const& edge) : node_A(edge.node_A), node_B(edge.node_B), distance(edge.distance)
 {
     times_Edge_copy_constructor_is_called++;
     cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
@@ -71,34 +71,34 @@ int Edge::ReadData(string& data_file_name, list<Edge*>& edgeList)
     ifstream dataFile(data_file_name);
     istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
     string buffer;
-    int graphSize = -1;
+    int graph_size = -1;
     while (start_of_file != end_of_file)
     {
         buffer += *start_of_file;
         if (*start_of_file == '\n')
         {
-            if (graphSize == -1)
-                graphSize = stoi(buffer);
+            if (graph_size == -1)
+                graph_size = stoi(buffer);
             else
                 edgeList.push_back(new Edge(buffer));
             buffer.clear();
         }
         ++start_of_file;
     }
-    cout << "Graph Size: " << graphSize << endl;
-    cout << "Size of edgeList: " << edgeList.size() << endl;
+    cout << "Graph Size: " << graph_size << endl;
+    cout << "Size of edge_list: " << edgeList.size() << endl;
     cout << "First Edge: " << *edgeList.front() << endl;
     cout << "Last Edge: " << *edgeList.back() << endl;
-    return graphSize;
+    return graph_size;
 }
 
 //static function to erase Edge data from memory
-bool Edge::EraseReadData(list<Edge*>& edgeList)
+bool Edge::EraseReadData(list<Edge*>& edge_list)
 {
-    for (auto edge : edgeList)
+    for (auto edge : edge_list)
         delete edge;
 
-    edgeList.clear();
+    edge_list.clear();
 
     //a check for memory leaks and copy constructor calls
     if (times_Edge_default_destructor_is_called == times_Edge_string_input_constructor_is_called

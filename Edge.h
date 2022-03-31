@@ -1,14 +1,18 @@
-#ifndef EDGE_H
-#define EDGE_H
+#ifndef EDGE_H_INCLUDED
+#define EDGE_H_INCLUDED
+
+#include <iostream>
+#include <string>
+#include <list>
 
 using namespace std;
 
 struct Edge
 {
 private:
-    int nodeA = -1;
+    int node_A = -1;
 
-    int nodeB = -1;
+    int node_B = -1;
 
     int distance = -1;
 
@@ -28,7 +32,7 @@ public:
     //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
     friend ostream& operator<<(ostream& os, const Edge& edge)
     {
-        os << "(" << edge.nodeA << ", " << edge.nodeB << ", " << edge.distance << ")";
+        os << "(" << edge.node_A << ", " << edge.node_B << ", " << edge.distance << ")";
         return os;
     }
 
@@ -43,4 +47,4 @@ public:
 
 };
 
-#endif // !EDGE_H
+#endif // !EDGE_H_INCLUDED

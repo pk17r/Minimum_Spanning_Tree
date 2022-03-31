@@ -1,5 +1,5 @@
-#ifndef CITY_GRAPH_H
-#define CITY_GRAPH_H
+#ifndef CITY_GRAPH_H_INCLUDED
+#define CITY_GRAPH_H_INCLUDED
 
 #include <list>
 #include <vector>
@@ -21,10 +21,12 @@ class CityGraph
     void PopulateCityMatrices(list<Edge*>& edgeList);
 
 public:
-    double total_dist_ = 0;
+    float avg_dist_dijkstras_ = 0;
+
+    int total_dist_primsMst_ = 0;
 
     //constructor
-    CityGraph();
+    CityGraph(const bool &kRunTestData);
 
     //destructor
     ~CityGraph();
@@ -43,4 +45,4 @@ public:
     friend class GeneralPrintFunctions;
 };
 
-#endif // CITY_GRAPH_H
+#endif // CITY_GRAPH_H_INCLUDED

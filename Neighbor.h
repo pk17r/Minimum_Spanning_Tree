@@ -1,5 +1,5 @@
-#ifndef NEIGHBOR_H
-#define NEIGHBOR_H
+#ifndef NEIGHBOR_H_INCLUDED
+#define NEIGHBOR_H_INCLUDED
 
 struct Neighbor
 {
@@ -26,4 +26,4 @@ struct Neighbor
     }
 };
 
-#endif // !NEIGHBOR_H
+#endif // !NEIGHBOR_H_INCLUDED
