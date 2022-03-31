@@ -21,7 +21,7 @@ class CityGraph
     void PopulateCityMatrices(list<Edge*>& edgeList);
 
 public:
-    float avg_dist_ = 0;
+    double total_dist_ = 0;
 
     //constructor
     CityGraph();
@@ -36,6 +36,8 @@ public:
     int GetNeighborDistance(int cityIndex, int neighborIndex);
 
     void DijkstrasAlgorithmImplementation();
+
+    void PrimsMinimumSpanningTreeAlgorithmImplementation();
 
     //making GeneralPrintFunctions as a friend class so it can access private matrices of this class for printing them
     friend class GeneralPrintFunctions;

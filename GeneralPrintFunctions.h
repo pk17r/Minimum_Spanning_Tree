@@ -65,7 +65,7 @@ public:
     }
 
     //Print function to print all city distances to origin city and shortest paths to origin city
-    static void PrintAllCityDistanceAndPathsToOrigin(const string& heading, const vector<Neighbor>& closed_set, const float& avg_dist_)
+    static void PrintAllCityDistanceAndPathsToOrigin(const string& heading, const vector<Neighbor>& closed_set, const double& total_dist_)
     {
         PrintBox(heading, "");
 
@@ -104,7 +104,7 @@ public:
             cout << endl;
         }
         cout << "\nconnected cities " << closed_set.size();
-        printf(" | avg path length %0.2f\n\n", avg_dist_);
+        printf(" | avg path length %0.2f | total path length %0.0f\n\n", (total_dist_ / (closed_set.size() - 1)), total_dist_);
     }
 
     //Print function to print contents of open set priority queue

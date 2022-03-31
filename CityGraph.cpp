@@ -185,7 +185,7 @@ void CityGraph::DijkstrasAlgorithmImplementation()
 
     //calculate sum of distances of cities to origin city
     for (Neighbor city : closed_set)
-        this->avg_dist_ += static_cast<float>(city.distance) / (closed_set.size() - 1);
+        this->total_dist_ += static_cast<double>(city.distance);
 
-    GeneralPrintFunctions::PrintAllCityDistanceAndPathsToOrigin("Dijkstras Algorithm Nearest City Paths and Distance to Origin", closed_set, this->avg_dist_);
+    GeneralPrintFunctions::PrintAllCityDistanceAndPathsToOrigin("Dijkstras Algorithm Nearest City Paths and Distance to Origin", closed_set, this->total_dist_);
 }
