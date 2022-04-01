@@ -1,9 +1,9 @@
-#include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
-#include <sstream>
+#include <iostream>
 #include <list>
+#include <sstream>
+#include <string>
+#include <vector>
 #include "Edge.h"
 #include "General_Print_Functions.h"
 
@@ -61,6 +61,14 @@ Edge::Edge(Edge const& edge) : node_A(edge.node_A), node_B(edge.node_B), distanc
 {
     times_Edge_copy_constructor_is_called++;
     cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
+}
+
+//friend allows the << operator to have access to information in the object so it can overload normal cout <<.
+    //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
+ostream& operator<<(ostream& os, const Edge& edge)
+{
+    os << "(" << edge.node_A << ", " << edge.node_B << ", " << edge.distance << ")";
+    return os;
 }
 
 //defining a static read data function to be called from CityGraph class

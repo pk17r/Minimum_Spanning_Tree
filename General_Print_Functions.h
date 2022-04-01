@@ -1,29 +1,35 @@
-#ifndef GENERAL_PRINT_FUNCTIONS_H_INCLUDED
-#define GENERAL_PRINT_FUNCTIONS_H_INCLUDED
+#ifndef GENERAL_PRINT_FUNCTIONS_H_
+#define GENERAL_PRINT_FUNCTIONS_H_
 
-#include "Neighbor.h"
-#include "City_Graph.h"
 #include <algorithm>
-
-using namespace std;
+#include <iostream>
+#include <list>
+#include <string>
+#include <vector>
+#include "Neighbor.h"
 
 class GeneralPrintFunctions
 {
 public:
-    //Print function to print headings and heading with content
-    static void PrintBox(const string& heading, const string& content, bool error)
+    //Print function to print headings and heading with content_string
+    static void PrintBox(const std::string& heading, std::vector<std::string>* content_vector_ptr, bool error)
     {
-        string identifier = error ? "!" : "*";
+        std::string identifier = error ? "!" : "*";
 
-        //making sure it is even number
+        //making sure heading and content_string is an even number
         int header_size = heading.size() + heading.size() % 2;
-        int content_size = content.size() + content.size() % 2;
-
-        int box_content_size = max(header_size, content_size);
+        
+        int largest_content_string_size = 0;
+        if (content_vector_ptr != NULL)
+            for (auto content_string : *content_vector_ptr)
+                if (static_cast<int>(content_string.size()) > largest_content_string_size)
+                    largest_content_string_size = content_string.size();
+        
+        int content_box_size = std::max(header_size, (largest_content_string_size + largest_content_string_size % 2));
         int side_banner_size = 5;
-        string border_line = identifier;
-        string empty_line = identifier;
-        for (int i = 0; i < side_banner_size + box_content_size + side_banner_size; i++)
+        std::string border_line = identifier;
+        std::string empty_line = identifier;
+        for (int i = 0; i < side_banner_size + content_box_size + side_banner_size; i++)
         {
             border_line.append(identifier);
             empty_line.append(" ");
@@ -31,45 +37,57 @@ public:
         border_line.append(identifier);
         empty_line.append(identifier);
 
-        cout << endl << endl;
-        cout << border_line << endl;
-        cout << empty_line << endl;
-        cout << identifier;
-        for (int i = 0; i < side_banner_size + (box_content_size - header_size) / 2; i++) cout << " ";
-        cout << heading << (heading.size() % 2 == 1 ? " " : "");
-        for (int i = 0; i < side_banner_size + (box_content_size - header_size) / 2; i++) cout << " ";
-        cout << identifier << endl;
-        cout << empty_line << endl;
-        if (content.size() > 0)
+        std::cout << std::endl << std::endl;
+        std::cout << border_line << std::endl;
+        std::cout << empty_line << std::endl;
+        std::cout << identifier;
+        for (int i = 0; i < side_banner_size + (content_box_size - header_size) / 2; i++) std::cout << " ";
+        std::cout << heading << (heading.size() % 2 == 1 ? " " : "");
+        for (int i = 0; i < side_banner_size + (content_box_size - header_size) / 2; i++) std::cout << " ";
+        std::cout << identifier << std::endl;
+        std::cout << empty_line << std::endl;
+        if (content_vector_ptr != NULL)
         {
-            cout << identifier;
-            for (int i = 0; i < side_banner_size + (box_content_size - content_size) / 2; i++) cout << " ";
-            cout << content << (content.size() % 2 == 1 ? " " : "");;
-            for (int i = 0; i < side_banner_size + (box_content_size - content_size) / 2; i++) cout << " ";
-            cout << identifier << endl;
-            cout << empty_line << endl;
+            for (auto content_string : *content_vector_ptr)
+            {
+                std::cout << identifier;
+                for (int i = 0; i < side_banner_size + (content_box_size - static_cast<int>(content_string.size())) / 2; i++) std::cout << " ";
+                std::cout << content_string << (content_string.size() % 2 == 1 ? " " : "");;
+                for (int i = 0; i < side_banner_size + (content_box_size - static_cast<int>(content_string.size())) / 2; i++) std::cout << " ";
+                std::cout << identifier << std::endl;
+                std::cout << empty_line << std::endl;
+            }
         }
-        cout << border_line << endl;
-        cout << endl;
+        std::cout << border_line << std::endl;
+        std::cout << std::endl;
     }
 
-    static void PrintBox(const string& heading, const string& content)
+    static void PrintBox(const std::string& heading, std::vector<std::string> *content_vector_ptr)
     {
-        PrintBox(heading, content, false);
+        PrintBox(heading, content_vector_ptr, false);
     }
 
-    static void PrintBox(const string& heading)
+    static void PrintBox(const std::string& heading, const std::string& content)
     {
-        PrintBox(heading, "", false);
+        std::vector<std::string> content_vector { content };
+        PrintBox(heading, &content_vector, false);
     }
 
-    static void PrintErrorBox(const string& heading, const string& content)
+    static void PrintBox(const std::string& heading)
     {
-        PrintBox(heading, content, true);
+        PrintBox(heading, NULL, false);
     }
+
+    static void PrintErrorBox(const std::string& heading, const std::string& content)
+    {
+        std::vector<std::string> content_vector{ content };
+        PrintBox(heading, &content_vector, true);
+    }
+
+    static const int kMaxPrintCitiesToShowPerRow = 6;
 
     //Print function to print all city distances and paths to origin city
-    static void PrintAllCityDistanceAndPathsToOrigin(const vector<Neighbor>& closed_set)
+    static void PrintAllCityDistanceAndPathsToOrigin(const std::vector<Neighbor>& closed_set)
     {
         int city_count = 0;
         for (Neighbor city : closed_set)
@@ -89,15 +107,15 @@ public:
             Neighbor nearest_city = city;
             do
             {
-                if (cities_in_path != 0 && cities_in_path % 6 == 0)
-                    cout << " ->\n\t    ";
+                if (cities_in_path != 0 && cities_in_path % kMaxPrintCitiesToShowPerRow == 0)
+                    std::cout << " ->\n\t    ";
                 for (Neighbor next_city : closed_set)
                     if (next_city.index == nearest_city.nearest_neighbor_index)
                     {
                         nearest_city = next_city;
                         break;
                     }
-                cout << " -> ";
+                std::cout << " -> ";
                 if (nearest_city.nearest_neighbor_index >= 0)
                     printf("(%2d |%2d)", nearest_city.index, nearest_city.distance);
                 else
@@ -105,34 +123,32 @@ public:
                 cities_in_path++;
             } while (nearest_city.nearest_neighbor_index >= 0);
 
-            cout << endl;
+            std::cout << std::endl;
         }
-        cout << "\nconnected cities " << closed_set.size();
-        //no endl here so be sure to print something and end line or just end line
+        std::cout << "\nconnected cities " << closed_set.size();
+        //no std::endl here so be sure to print something and end line or just end line
     }
 
     //Print function to print all city distances and paths to origin city
-    static void PrintMSTPathsToOrigin(const vector<Neighbor>& closed_set)
+    static void PrintMSTPathsToOrigin(const std::vector<Neighbor>& closed_set)
     {
-        Neighbor origin_city = closed_set.front();
-
-        list<Neighbor> open_set;
+        std::list<Neighbor> open_set;
 
         //push all MST nodes to open_set
         for (Neighbor city : closed_set)
             open_set.push_back(city);
 
         //list to store MST branches
-        list<list<Neighbor>> MST_Branches;
+        std::list<std::list<Neighbor>> MST_Branches;
 
         //list of removed city indices
-        list<int> removed_city_indices;
+        std::list<int> removed_city_indices;
 
         //find the longest branch, remove it from openset and move it to MST_Branches
         while (open_set.size() != 0)
         {
             int max_cities_in_path = -1;
-            int max_cities_in_path_leaf_city_index = -1;
+            int max_cities_in_path_leaf_city_index = Neighbor::kIndexNull;
             for (Neighbor city : open_set)
             {
                 int cities_in_path = 0;
@@ -154,7 +170,7 @@ public:
                 }
             }
             //remove this path and add to MST_Branches
-            list<Neighbor> branch;
+            std::list<Neighbor> branch;
             do
             {
                 for (auto iterator = open_set.begin(); iterator != open_set.end(); iterator++)
@@ -174,14 +190,14 @@ public:
         }
 
         int branch_count = 0;
-        for (list<Neighbor> branch : MST_Branches)
+        for (std::list<Neighbor> branch : MST_Branches)
         {
             ++branch_count;
             printf("   %2d    ", branch_count);
             
             //print shortest path to origin city
             int cities_in_path = 1;
-            int nearest_neighbor_index = -1;
+            int nearest_neighbor_index = Neighbor::kIndexNull;
             for(Neighbor city : branch)
             {
                 if (city.nearest_neighbor_index >= 0)
@@ -189,19 +205,21 @@ public:
                 else
                     printf("(origin)");
                 nearest_neighbor_index = city.nearest_neighbor_index;
-                if (cities_in_path != 0 && cities_in_path % 6 == 0 && nearest_neighbor_index != -1)
-                    cout << "\n\t\t  -> ";
+                if (cities_in_path != 0 && cities_in_path % kMaxPrintCitiesToShowPerRow == 0 && nearest_neighbor_index != Neighbor::kIndexNull)
+                    std::cout << "\n\t\t  -> ";
                 cities_in_path++;
             }
-            if(nearest_neighbor_index != -1)
-                if(nearest_neighbor_index > 0)
+            if (nearest_neighbor_index != Neighbor::kIndexNull)
+            {
+                if (nearest_neighbor_index > 0)
                     printf("(%2d )", nearest_neighbor_index);
                 else
                     printf("(origin)");
-            cout << endl;
+            }
+            std::cout << std::endl;
         }
-        cout << "\nconnected cities " << closed_set.size();
-        //no endl here so be sure to print something and end line or just end line
+        std::cout << "\nconnected cities " << closed_set.size();
+        //no std::endl here so be sure to print something and end line or just end line
     }
 
     //Print function to print contents of open set priority queue
@@ -209,49 +227,15 @@ public:
     static void PrintOpenSet(T p)
     {
         T q = p;
-        cout << "Open Set: ";
+        std::cout << "Open Set: ";
         while (!q.empty())
         {
-            cout << '\t' << static_cast<Neighbor>(q.top()).distance;
+            std::cout << '\t' << static_cast<Neighbor>(q.top()).distance;
             q.pop();
         }
-        cout << endl;
+        std::cout << std::endl;
     }
 
-    static void PrintCityGraphMatrix(const CityGraph* city_graph_ptr, bool print_connectivity_matrix)
-    {
-        cout << (print_connectivity_matrix ? "Connectivity Matrix:\n\n" : "Distance Matrix:\n\n");
-        
-        int pages = city_graph_ptr->size_ / city_graph_ptr->kmax_print_columns_to_show_per_page_;
-        for (int p = 0; p <= pages; p++)
-        {
-            cout << "Cities:\t";
-            for (int i = p * city_graph_ptr->kmax_print_columns_to_show_per_page_; i < min(city_graph_ptr->size_, (p + 1) * city_graph_ptr->kmax_print_columns_to_show_per_page_); i++)
-                printf("|  %2d\t", i);
-            cout << endl << "--------";
-            for (int i = p * city_graph_ptr->kmax_print_columns_to_show_per_page_; i < min(city_graph_ptr->size_, (p + 1) * city_graph_ptr->kmax_print_columns_to_show_per_page_); i++)
-                cout << "|-------";
-            cout << endl;
-            for (int i = 0; i < city_graph_ptr->size_; i++)
-            {
-                cout << "   " << i << "\t";
-                for (int j = p * city_graph_ptr->kmax_print_columns_to_show_per_page_; j < min(city_graph_ptr->size_, (p + 1) * city_graph_ptr->kmax_print_columns_to_show_per_page_); j++)
-                {
-                    cout << "|  ";
-                    if (i == j)
-                        printf(" -");
-                    else if (city_graph_ptr->city_connectivity_matrix_[i][j])
-                        if (print_connectivity_matrix)
-                            cout << " E";
-                        else
-                            printf("%2d", city_graph_ptr->city_distance_matrix_[i][j]);
-                    cout << "\t";
-                }
-                cout << endl;
-            }
-            cout << endl;
-        }
-    }
 };
 
-#endif // !GENERAL_PRINT_FUNCTIONS_H_INCLUDED
+#endif // !GENERAL_PRINT_FUNCTIONS_H_

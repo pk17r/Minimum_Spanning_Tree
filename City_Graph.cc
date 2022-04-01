@@ -1,13 +1,13 @@
+#include <climits>
+#include <iostream>
+#include <list>
+#include <queue>
+#include <sstream>
+#include <vector>
 #include "Edge.h"
 #include "Neighbor.h"
 #include "City_Graph.h"
 #include "General_Print_Functions.h"
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <sstream>
-#include <list>
-#include <climits>
 
 using namespace std;
 
@@ -62,8 +62,8 @@ CityGraph::CityGraph(const bool& kRunTestData)
 
     //print connectivity matrix
     GeneralPrintFunctions::PrintBox("Connectivity and Distance Matrices");
-    GeneralPrintFunctions::PrintCityGraphMatrix(this, true);
-    GeneralPrintFunctions::PrintCityGraphMatrix(this, false);
+    PrintCityGraphMatrix(true);
+    PrintCityGraphMatrix(false);
 
     //call avg distance to origin city method
     DijkstrasAlgorithmImplementation();
@@ -94,6 +94,45 @@ CityGraph::~CityGraph()
 int CityGraph::get_size_()
 {
     return this->size_;
+}
+
+static const int kMaxPrintColumnsToShowPerPage = 13;
+
+void CityGraph::PrintCityGraphMatrix(bool print_connectivity_matrix)
+{
+    cout << (print_connectivity_matrix ? "Connectivity Matrix:\n\n" : "Distance Matrix:\n\n");
+
+    int pages = size_ / kMaxPrintColumnsToShowPerPage;
+    for (int p = 0; p <= pages; p++)
+    {
+        cout << "Cities:\t";
+        for (int i = p * kMaxPrintColumnsToShowPerPage; i < min(size_, (p + 1) * kMaxPrintColumnsToShowPerPage); i++)
+            printf("|  %2d\t", i);
+        cout << endl << "--------";
+        for (int i = p * kMaxPrintColumnsToShowPerPage; i < min(size_, (p + 1) * kMaxPrintColumnsToShowPerPage); i++)
+            cout << "|-------";
+        cout << endl;
+        for (int i = 0; i < size_; i++)
+        {
+            cout << "   " << i << "\t";
+            for (int j = p * kMaxPrintColumnsToShowPerPage; j < min(size_, (p + 1) * kMaxPrintColumnsToShowPerPage); j++)
+            {
+                cout << "|  ";
+                if (i == j)
+                    printf(" -");
+                else if (city_connectivity_matrix_[i][j])
+                {
+                    if (print_connectivity_matrix)
+                        cout << " E";
+                    else
+                        printf("%2d", city_distance_matrix_[i][j]);
+                }
+                cout << "\t";
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
 }
 
 vector<Neighbor> CityGraph::GetNeighbors(int city_index)

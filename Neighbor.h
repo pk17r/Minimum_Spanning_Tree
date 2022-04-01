@@ -1,20 +1,22 @@
-#ifndef NEIGHBOR_H_INCLUDED
-#define NEIGHBOR_H_INCLUDED
+#ifndef NEIGHBOR_H_
+#define NEIGHBOR_H_
 
 struct Neighbor
 {
-    int index = -1;
+    //Neighbor city indices will be whole numbers
+    static const int kIndexNull = -1;
+
+    int index = kIndexNull;
     
-    int nearest_neighbor_index = -1;
+    int nearest_neighbor_index = kIndexNull;
     
     int distance = -1;
 
     //defining constructors here itself
-
     Neighbor(int index, int distance)
     {
         this->index = index;
-        this->nearest_neighbor_index = -1;
+        this->nearest_neighbor_index = kIndexNull;
         this->distance = distance;
     }
     
@@ -26,4 +28,4 @@ struct Neighbor
     }
 };
 
-#endif // !NEIGHBOR_H_INCLUDED
+#endif // !NEIGHBOR_H_

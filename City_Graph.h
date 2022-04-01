@@ -1,5 +1,5 @@
-#ifndef CITY_GRAPH_H_INCLUDED
-#define CITY_GRAPH_H_INCLUDED
+#ifndef CITY_GRAPH_H_
+#define CITY_GRAPH_H_
 
 #include <list>
 #include <vector>
@@ -14,11 +14,11 @@ class CityGraph
 
     int size_ = -1;
 
-    const int kmax_print_columns_to_show_per_page_ = 13;
-
     void InitializeCityMatrices();
 
-    void PopulateCityMatrices(list<Edge*>& edgeList);
+    void PopulateCityMatrices(std::list<Edge*>& edgeList);
+
+    void PrintCityGraphMatrix(bool print_connectivity_matrix);
 
 public:
     float avg_dist_dijkstras_ = 0;
@@ -33,7 +33,7 @@ public:
 
     int get_size_();
 
-    vector<Neighbor> GetNeighbors(int cityIndex);
+    std::vector<Neighbor> GetNeighbors(int cityIndex);
 
     int GetNeighborDistance(int cityIndex, int neighborIndex);
 
@@ -41,8 +41,6 @@ public:
 
     void PrimsMinimumSpanningTreeAlgorithmImplementation();
 
-    //making GeneralPrintFunctions as a friend class so it can access private matrices of this class for printing them
-    friend class GeneralPrintFunctions;
 };
 
-#endif // CITY_GRAPH_H_INCLUDED
+#endif // CITY_GRAPH_H_

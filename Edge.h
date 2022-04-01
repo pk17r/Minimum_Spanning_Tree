@@ -1,11 +1,9 @@
-#ifndef EDGE_H_INCLUDED
-#define EDGE_H_INCLUDED
+#ifndef EDGE_H_
+#define EDGE_H_
 
 #include <iostream>
-#include <string>
 #include <list>
-
-using namespace std;
+#include <string>
 
 struct Edge
 {
@@ -22,7 +20,7 @@ public:
     ~Edge();
 
     //constructor created to load data from string lines in input file
-    Edge(string& str);
+    Edge(std::string& str);
 
     //copy constructor, to keep track of unnecessary copies being created by program
     //https://stackoverflow.com/questions/515071/destructor-called-on-object-when-adding-it-to-stdlist
@@ -30,21 +28,17 @@ public:
 
     //friend allows the << operator to have access to information in the object so it can overload normal cout <<.
     //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
-    friend ostream& operator<<(ostream& os, const Edge& edge)
-    {
-        os << "(" << edge.node_A << ", " << edge.node_B << ", " << edge.distance << ")";
-        return os;
-    }
+    friend std::ostream& operator<<(std::ostream& os, const Edge& edge);
 
     //making CityGraph class as friend of this struct so CityGraph can access ReadData and EraseReadData static functions
     friend class CityGraph;
 
     //defining a static read data function to be called from CityGraph class
-    static int ReadData(string& data_file_name, list<Edge*>& edgeList);
+    static int ReadData(std::string& data_file_name, std::list<Edge*>& edgeList);
 
     //static function to erase Edge data from memory
-    static bool EraseReadData(list<Edge*>& edgeList);
+    static bool EraseReadData(std::list<Edge*>& edgeList);
 
 };
 
-#endif // !EDGE_H_INCLUDED
+#endif // !EDGE_H_
