@@ -94,11 +94,12 @@ public:
         {
             //print city and distance to origin
             ++city_count;
-            if (city.nearest_neighbor_index >= 0)
-                printf("%2d  (%2d |%2d)", city_count, city.index, city.distance);
-            else
+            printf("%2d  ", city_count);
+            std::cout << city;
+            
+            if (city.nearest_neighbor_index == Neighbor::kIndexNull)    //already at origin so there is no path ahead
             {
-                printf("%2d  (origin)\n", city_count);
+                std::cout << std::endl;
                 continue;
             }
 
@@ -109,22 +110,24 @@ public:
             {
                 if (cities_in_path != 0 && cities_in_path % kMaxPrintCitiesToShowPerRow == 0)
                     std::cout << " ->\n\t    ";
-                for (Neighbor next_city : closed_set)
-                    if (next_city.index == nearest_city.nearest_neighbor_index)
+
+                for (Neighbor city : closed_set)
+                {
+                    if (city.index == nearest_city.nearest_neighbor_index)
                     {
-                        nearest_city = next_city;
+                        nearest_city = city;
                         break;
                     }
-                std::cout << " -> ";
-                if (nearest_city.nearest_neighbor_index >= 0)
-                    printf("(%2d |%2d)", nearest_city.index, nearest_city.distance);
-                else
-                    printf("(origin)");
+                }
+
+                std::cout << " -> " << nearest_city;
+
                 cities_in_path++;
-            } while (nearest_city.nearest_neighbor_index >= 0);
+            } while (nearest_city.nearest_neighbor_index > Neighbor::kIndexNull);
 
             std::cout << std::endl;
         }
+
         std::cout << "\nconnected cities " << closed_set.size();
         //no std::endl here so be sure to print something and end line or just end line
     }
@@ -147,8 +150,10 @@ public:
         //find the longest branch, remove it from openset and move it to MST_Branches
         while (open_set.size() != 0)
         {
-            int max_cities_in_path = -1;
-            int max_cities_in_path_leaf_city_index = Neighbor::kIndexNull;
+            int max_cities_in_branch = -1;
+            
+            int branch_leaf_city_index = Neighbor::kIndexNull;
+
             for (Neighbor city : open_set)
             {
                 int cities_in_path = 0;
@@ -156,17 +161,20 @@ public:
                 do
                 {
                     for (Neighbor next_city : open_set)
+                    {
                         if (next_city.index == nearest_city.nearest_neighbor_index)
                         {
                             nearest_city = next_city;
                             break;
                         }
+                    }
                     cities_in_path++;
                 } while (nearest_city.nearest_neighbor_index >= 0 && count(removed_city_indices.begin(), removed_city_indices.end(), nearest_city.nearest_neighbor_index) == 0);
-                if (cities_in_path > max_cities_in_path)
+
+                if (cities_in_path > max_cities_in_branch)
                 {
-                    max_cities_in_path = cities_in_path;
-                    max_cities_in_path_leaf_city_index = city.index;
+                    max_cities_in_branch = cities_in_path;
+                    branch_leaf_city_index = city.index;
                 }
             }
             //remove this path and add to MST_Branches
@@ -175,17 +183,18 @@ public:
             {
                 for (auto iterator = open_set.begin(); iterator != open_set.end(); iterator++)
                 {
-                    if (iterator->index == max_cities_in_path_leaf_city_index)
+                    if (iterator->index == branch_leaf_city_index)
                     {
                         //remove this
                         branch.push_back(*iterator);
                         removed_city_indices.push_back(iterator->index);
-                        max_cities_in_path_leaf_city_index = iterator->nearest_neighbor_index;
+                        branch_leaf_city_index = iterator->nearest_neighbor_index;
                         open_set.erase(iterator);
                         break;
                     }
                 }
-            } while (max_cities_in_path_leaf_city_index >= 0 && count(removed_city_indices.begin(), removed_city_indices.end(), max_cities_in_path_leaf_city_index) == 0);
+            } while (branch_leaf_city_index >= 0 && count(removed_city_indices.begin(), removed_city_indices.end(), branch_leaf_city_index) == 0);
+
             MST_Branches.push_back(branch);
         }
 
@@ -200,21 +209,24 @@ public:
             int nearest_neighbor_index = Neighbor::kIndexNull;
             for(Neighbor city : branch)
             {
-                if (city.nearest_neighbor_index >= 0)
-                    printf("(%2d |%2d) -> ", city.index, city.distance);
-                else
-                    printf("(origin)");
+                std::cout << city;
+                
+                if (city.nearest_neighbor_index > Neighbor::kIndexNull)
+                    std::cout << " -> ";
+
                 nearest_neighbor_index = city.nearest_neighbor_index;
+                
                 if (cities_in_path != 0 && cities_in_path % kMaxPrintCitiesToShowPerRow == 0 && nearest_neighbor_index != Neighbor::kIndexNull)
                     std::cout << "\n\t\t  -> ";
+
                 cities_in_path++;
             }
             if (nearest_neighbor_index != Neighbor::kIndexNull)
             {
-                if (nearest_neighbor_index > 0)
+                if (nearest_neighbor_index > Neighbor::kOriginCityIndex)
                     printf("(%2d )", nearest_neighbor_index);
                 else
-                    printf("(origin)");
+                    std::cout << Neighbor(Neighbor::kOriginCityIndex, 0);
             }
             std::cout << std::endl;
         }
