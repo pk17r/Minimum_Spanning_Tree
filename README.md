@@ -4,6 +4,13 @@ Minimum Spanning Tree Algorithm using Prim Algorithm
 
 Homework 3: Compute the minimum spanning tree for an inputted graph</b>
 
+Compile using
+g++ -Wall -g *.cpp *.cc -o main
+
+Arguments accepted:
+test - to use test dataset.
+
+
 Objective
 
 Trees are an important subcategory of graphs. Trees such as binary trees and red-black trees are important data structures used throughout computer science. Again it is hoped that this topic is mostly review for active participants in this class.
