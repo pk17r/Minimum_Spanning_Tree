@@ -49,8 +49,7 @@ Neighbor* MyPriorityQueue::member_with_index(int index)
 			return &city;
 		}
 	}
-	Neighbor city = Neighbor(Neighbor::kIndexNull, 0);
-	return &city;
+	return nullptr;
 }
 
 void MyPriorityQueue::sort()

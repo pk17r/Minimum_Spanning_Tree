@@ -52,17 +52,15 @@ int main(int argc, char* argv[])
         
         return string(avg_dist_formatted_char_array);
     };
-
+    
     contents = vector<string>
     {
         "Prims's Minimum Spanning Tree Length: " + to_string(city_graph_object.total_dist_primsMst_),
         "Dijkstra's Algorithm Average Distance to Origin: " + float_to_formatted_string_lambda_fn(city_graph_object.avg_dist_dijkstras_),
         "",
-        city_graph_object.file_read_time_str,
-        city_graph_object.populate_matrices_and_clear_edgeList_time_str,
-        city_graph_object.graph_algorithms_time_str,
-        city_graph_object.print_to_terminal_time_str,
     };
+    contents.insert(contents.end(), city_graph_object.program_time_taken.begin(), city_graph_object.program_time_taken.end());
+
     //print results
     GeneralPrintFunctions::PrintBox("RESULTS", &contents);
     

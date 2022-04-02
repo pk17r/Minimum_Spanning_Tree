@@ -14,7 +14,6 @@ static int times_Edge_default_constructor_is_called = 0;
 static int times_Edge_string_input_constructor_is_called = 0;
 static int times_Edge_copy_constructor_is_called = 0;
 static int times_Edge_default_destructor_is_called = 0;
-static bool programming_error_found = false;
 
 //default constructor
 Edge::Edge() { times_Edge_default_constructor_is_called++; }
@@ -45,10 +44,7 @@ Edge::Edge(string& str)
             else if (node_B == -1) node_B = int_found;
             else if (distance == -1) distance = int_found;
             else
-            {
-                GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR #1", "Edge Read int_found=" + to_string(int_found));
-                programming_error_found = true;
-            }
+                GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR EDGE.CC STRING READ CONSTRUCTOR", "Edge Read int_found=" + to_string(int_found));
         }
         temp.clear();
     }
@@ -64,7 +60,7 @@ Edge::Edge(Edge const& edge) : node_A(edge.node_A), node_B(edge.node_B), distanc
 }
 
 //friend allows the << operator to have access to information in the object so it can overload normal cout <<.
-    //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
+//https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
 ostream& operator<<(ostream& os, const Edge& edge)
 {
     os << "(" << edge.node_A << ", " << edge.node_B << ", " << edge.distance << ")";
@@ -101,7 +97,7 @@ int Edge::ReadData(string& data_file_name, list<Edge*>& edgeList)
 }
 
 //static function to erase Edge data from memory
-bool Edge::EraseReadData(list<Edge*>& edge_list)
+void Edge::EraseReadData(list<Edge*>& edge_list)
 {
     for (auto edge : edge_list)
         delete edge;
@@ -114,16 +110,6 @@ bool Edge::EraseReadData(list<Edge*>& edge_list)
         && times_Edge_copy_constructor_is_called == 0)
         cout << "Data read from input file efficiently and read data container cleared without memory leaks" << endl;
     else
-    {
-        cout << "PROGRAMMING ERROR #2: Data NOT read from input file efficiently and read data container cleared without memory leaks" << endl;
-        programming_error_found = true;
-    }
+        GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR in EDGE.CC", "Data NOT read from input file efficiently and read data container cleared without memory leaks");
 
-    if (programming_error_found)
-    {
-        GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR FOUND", "Programming error was found in Edge.cpp");
-    }
-
-    //return bool entry of programming errors found in this cpp file.
-    return programming_error_found;
 }

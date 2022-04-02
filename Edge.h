@@ -37,7 +37,7 @@ public:
     static int ReadData(std::string& data_file_name, std::list<Edge*>& edgeList);
 
     //static function to erase Edge data from memory
-    static bool EraseReadData(std::list<Edge*>& edgeList);
+    static void EraseReadData(std::list<Edge*>& edgeList);
 
 };
 

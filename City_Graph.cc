@@ -1,5 +1,8 @@
+#include <algorithm>
 #include <climits>
 #include <chrono>
+#include <cmath>
+#include <inttypes.h>
 #include <iostream>
 #include <list>
 #include <queue>
@@ -43,6 +46,39 @@ void CityGraph::PopulateCityMatrices(list<Edge*>& edgeList)
     }
 }
 
+static string FormatThousandSeparators(string input_str)
+{
+    int digits = input_str.size();
+    int counter = 1;
+    reverse(input_str.begin(), input_str.end());
+    //if (digits > 3)
+    //    input_str.insert(3,",");
+    //if (digits > 6)
+    //    input_str.insert(7, ",");
+    //
+    while (digits > 3 * counter)
+    {
+        input_str.insert(3 * counter + counter - 1, ",");
+        counter++;
+    }
+    input_str.resize(15, ' ');
+    reverse(input_str.begin(), input_str.end());
+    return input_str;
+}
+
+static string CalculateTimeTaken(string description, high_resolution_clock::time_point t0, high_resolution_clock::time_point t1)
+{
+    description.resize(50, ' ');
+    description += ":";
+    auto time_span = duration_cast<microseconds>(t1 - t0);
+    double time_difference = static_cast<double>(time_span.count());
+    const int digits_in_time = 15;
+    char time_difference_char_arr[digits_in_time];
+    snprintf(time_difference_char_arr, digits_in_time, "%.0f", time_difference);
+    string time_difference_string(time_difference_char_arr);
+    return description + FormatThousandSeparators(time_difference_string) + " microseconds";
+}
+
 //constructor
 CityGraph::CityGraph(const bool& kRunTestData)
 {
@@ -52,22 +88,23 @@ CityGraph::CityGraph(const bool& kRunTestData)
     else
         data_file_name = "cplusplus4c_homeworks_Homework3_SampleTestData_mst_data.txt";
 
-    auto t0_start_read_file_time = high_resolution_clock::now();
+    auto start_timer = high_resolution_clock::now();    //clock time
 
     //read input file data into a temporary list
     list<Edge*> edgeList;
     this->size_ = Edge::ReadData(data_file_name, edgeList);
-
-    auto t1_stop_read_file_time = high_resolution_clock::now();
 
     //Initialize and populate matrices
     InitializeCityMatrices();
     PopulateCityMatrices(edgeList);
 
     //clear edgeList
-    bool programming_error_found_in_Edge_EraseReadData = Edge::EraseReadData(edgeList);
+    Edge::EraseReadData(edgeList);
 
-    auto t2_populate_matrices_clear_edgeList_time = high_resolution_clock::now();
+    //clock time
+    auto end_timer = high_resolution_clock::now();
+    program_time_taken.push_back(CalculateTimeTaken("Input file read time", start_timer, end_timer));
+    start_timer = high_resolution_clock::now();
 
     //call avg distance to origin city method
     DijkstrasAlgorithmImplementation();
@@ -75,8 +112,20 @@ CityGraph::CityGraph(const bool& kRunTestData)
     //call minimum spanning tree to origin city method
     PrimsMinimumSpanningTreeAlgorithmImplementation();
 
-    auto t3_graph_algorithms_time = high_resolution_clock::now();
+    //clock time
+    end_timer = high_resolution_clock::now();
+    program_time_taken.push_back(CalculateTimeTaken("Graph Algorithms with My Priority Queue time", start_timer, end_timer));
+    start_timer = high_resolution_clock::now();
 
+    PrintEverythingToTerminal();
+
+    //clock time
+    end_timer = high_resolution_clock::now();
+    program_time_taken.push_back(CalculateTimeTaken("Print things to terminal time", start_timer, end_timer));
+}
+
+void CityGraph::PrintEverythingToTerminal()
+{
     //print connectivity matrix
     GeneralPrintFunctions::PrintBox("Connectivity and Distance Matrices");
     PrintCityGraphMatrix(true);
@@ -92,20 +141,6 @@ CityGraph::CityGraph(const bool& kRunTestData)
     GeneralPrintFunctions::PrintMSTPathsToOrigin(this->closed_set_prims_mst);
     printf(" | total mst length %d\n\n", this->total_dist_primsMst_);
 
-    if (programming_error_found_in_Edge_EraseReadData)
-        GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR FOUND", "programming_error_found_in_Edge_EraseReadData");
-
-    auto t4_print_to_terminal_time = high_resolution_clock::now();
-
-    auto file_read_time = duration_cast<microseconds>(t1_stop_read_file_time - t0_start_read_file_time);
-    auto populate_matrices_and_clear_edgeList_time = duration_cast<microseconds>(t2_populate_matrices_clear_edgeList_time - t1_stop_read_file_time);
-    auto graph_algorithms_time = duration_cast<microseconds>(t3_graph_algorithms_time - t2_populate_matrices_clear_edgeList_time);
-    auto print_to_terminal_time = duration_cast<microseconds>(t4_print_to_terminal_time - t3_graph_algorithms_time);
-
-    this->file_read_time_str = "file_read_time " + to_string(file_read_time.count()) + " microseconds";
-    this->populate_matrices_and_clear_edgeList_time_str = "populate_matrices_and_clear_edgeList_time " + to_string(populate_matrices_and_clear_edgeList_time.count()) + " microseconds";
-    this->graph_algorithms_time_str = "graph_algorithms_time " + to_string(graph_algorithms_time.count()) + " microseconds";
-    this->print_to_terminal_time_str = "print_to_terminal_time " + to_string(print_to_terminal_time.count()) + " microseconds";
 }
 
 //destructor

@@ -8,47 +8,49 @@
 
 class CityGraph
 {
-    bool** city_connectivity_matrix_;
-
-    int** city_distance_matrix_;
-
-    int size_ = -1;
-
-    void InitializeCityMatrices();
-
-    void PopulateCityMatrices(std::list<Edge*>& edgeList);
-
-    void PrintCityGraphMatrix(bool print_connectivity_matrix);
-
 public:
+
+    float avg_dist_dijkstras_ = 0;
+
+    int total_dist_primsMst_ = 0;
+
+    std::vector<std::string> program_time_taken;
+    
     //constructor
-    CityGraph(const bool &kRunTestData);
+    CityGraph(const bool& kRunTestData);
 
     //destructor
     ~CityGraph();
 
     int get_size_();
 
+    int GetNeighborDistance(int cityIndex, int neighborIndex);
+
     std::vector<Neighbor> GetNeighbors(int cityIndex);
 
-    int GetNeighborDistance(int cityIndex, int neighborIndex);
+private:
+    bool** city_connectivity_matrix_;
+
+    int** city_distance_matrix_;
+
+    int size_ = -1;
+
+    std::vector<Neighbor> closed_set_dijkstras;
+
+    std::vector<Neighbor> closed_set_prims_mst;
+
+    void InitializeCityMatrices();
+
+    void PopulateCityMatrices(std::list<Edge*>& edgeList);
+
+    void PrintEverythingToTerminal();
+
+    void PrintCityGraphMatrix(bool print_connectivity_matrix);
 
     void DijkstrasAlgorithmImplementation();
 
     void PrimsMinimumSpanningTreeAlgorithmImplementation();
 
-    float avg_dist_dijkstras_ = 0;
-
-    std::vector<Neighbor> closed_set_dijkstras;
-
-    int total_dist_primsMst_ = 0;
-
-    std::vector<Neighbor> closed_set_prims_mst;
-
-    std::string file_read_time_str;
-    std::string populate_matrices_and_clear_edgeList_time_str;
-    std::string graph_algorithms_time_str;
-    std::string print_to_terminal_time_str;
 };
 
 #endif // CITY_GRAPH_H_
