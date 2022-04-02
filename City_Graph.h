@@ -21,10 +21,6 @@ class CityGraph
     void PrintCityGraphMatrix(bool print_connectivity_matrix);
 
 public:
-    float avg_dist_dijkstras_ = 0;
-
-    int total_dist_primsMst_ = 0;
-
     //constructor
     CityGraph(const bool &kRunTestData);
 
@@ -41,6 +37,18 @@ public:
 
     void PrimsMinimumSpanningTreeAlgorithmImplementation();
 
+    float avg_dist_dijkstras_ = 0;
+
+    std::vector<Neighbor> closed_set_dijkstras;
+
+    int total_dist_primsMst_ = 0;
+
+    std::vector<Neighbor> closed_set_prims_mst;
+
+    std::string file_read_time_str;
+    std::string populate_matrices_and_clear_edgeList_time_str;
+    std::string graph_algorithms_time_str;
+    std::string print_to_terminal_time_str;
 };
 
 #endif // CITY_GRAPH_H_

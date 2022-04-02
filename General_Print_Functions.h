@@ -17,13 +17,13 @@ public:
         std::string identifier = error ? "!" : "*";
 
         //making sure heading and content_string is an even number
-        int header_size = heading.size() + heading.size() % 2;
+        int header_size = static_cast<int>(heading.size() + heading.size() % 2);
         
         int largest_content_string_size = 0;
         if (content_vector_ptr != NULL)
             for (auto content_string : *content_vector_ptr)
                 if (static_cast<int>(content_string.size()) > largest_content_string_size)
-                    largest_content_string_size = content_string.size();
+                    largest_content_string_size = static_cast<int>(content_string.size());
         
         int content_box_size = std::max(header_size, (largest_content_string_size + largest_content_string_size % 2));
         int side_banner_size = 5;
@@ -242,7 +242,7 @@ public:
         std::cout << "Open Set: ";
         while (!q.empty())
         {
-            std::cout << '\t' << static_cast<Neighbor>(q.top()).distance;
+            std::cout << "\t(" << static_cast<Neighbor>(q.top()).index << "|" << static_cast<Neighbor>(q.top()).distance << ")";
             q.pop();
         }
         std::cout << std::endl;

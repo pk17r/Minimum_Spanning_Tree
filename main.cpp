@@ -9,8 +9,7 @@
 // Mar 27th 2022
 // 
 
-//#include <limits>
-//#include <iostream>
+#include <iostream>
 #include <string>
 #include "City_Graph.h"
 #include "General_Print_Functions.h"
@@ -38,7 +37,7 @@ int main(int argc, char* argv[])
 
     //CityGraph object calling explicitly defined constructor which runs all program steps
     CityGraph city_graph_object(run_test_data);
-    
+
     //lambda function to print float as a formatted string
     auto float_to_formatted_string_lambda_fn = [](float avg_dist)
     {
@@ -58,6 +57,11 @@ int main(int argc, char* argv[])
     {
         "Prims's Minimum Spanning Tree Length: " + to_string(city_graph_object.total_dist_primsMst_),
         "Dijkstra's Algorithm Average Distance to Origin: " + float_to_formatted_string_lambda_fn(city_graph_object.avg_dist_dijkstras_),
+        "",
+        city_graph_object.file_read_time_str,
+        city_graph_object.populate_matrices_and_clear_edgeList_time_str,
+        city_graph_object.graph_algorithms_time_str,
+        city_graph_object.print_to_terminal_time_str,
     };
     //print results
     GeneralPrintFunctions::PrintBox("RESULTS", &contents);

@@ -1,4 +1,5 @@
 #include <climits>
+#include <chrono>
 #include <iostream>
 #include <list>
 #include <queue>
@@ -7,9 +8,11 @@
 #include "Edge.h"
 #include "Neighbor.h"
 #include "City_Graph.h"
+#include "My_Priority_Queue.h"
 #include "General_Print_Functions.h"
 
 using namespace std;
+using namespace std::chrono;
 
 void CityGraph::InitializeCityMatrices()
 {
@@ -33,7 +36,7 @@ void CityGraph::InitializeCityMatrices()
 
 void CityGraph::PopulateCityMatrices(list<Edge*>& edgeList)
 {
-    for (auto edge : edgeList)
+    for (auto &edge : edgeList)
     {
         city_connectivity_matrix_[edge->node_A][edge->node_B] = city_connectivity_matrix_[edge->node_B][edge->node_A] = 1;
         city_distance_matrix_[edge->node_A][edge->node_B] = city_distance_matrix_[edge->node_B][edge->node_A] = static_cast<int>(edge->distance);
@@ -49,9 +52,13 @@ CityGraph::CityGraph(const bool& kRunTestData)
     else
         data_file_name = "cplusplus4c_homeworks_Homework3_SampleTestData_mst_data.txt";
 
+    auto t0_start_read_file_time = high_resolution_clock::now();
+
     //read input file data into a temporary list
     list<Edge*> edgeList;
     this->size_ = Edge::ReadData(data_file_name, edgeList);
+
+    auto t1_stop_read_file_time = high_resolution_clock::now();
 
     //Initialize and populate matrices
     InitializeCityMatrices();
@@ -60,10 +67,7 @@ CityGraph::CityGraph(const bool& kRunTestData)
     //clear edgeList
     bool programming_error_found_in_Edge_EraseReadData = Edge::EraseReadData(edgeList);
 
-    //print connectivity matrix
-    GeneralPrintFunctions::PrintBox("Connectivity and Distance Matrices");
-    PrintCityGraphMatrix(true);
-    PrintCityGraphMatrix(false);
+    auto t2_populate_matrices_clear_edgeList_time = high_resolution_clock::now();
 
     //call avg distance to origin city method
     DijkstrasAlgorithmImplementation();
@@ -71,8 +75,37 @@ CityGraph::CityGraph(const bool& kRunTestData)
     //call minimum spanning tree to origin city method
     PrimsMinimumSpanningTreeAlgorithmImplementation();
 
+    auto t3_graph_algorithms_time = high_resolution_clock::now();
+
+    //print connectivity matrix
+    GeneralPrintFunctions::PrintBox("Connectivity and Distance Matrices");
+    PrintCityGraphMatrix(true);
+    PrintCityGraphMatrix(false);
+
+    GeneralPrintFunctions::PrintBox("Dijkstras Algorithm Nearest City Paths and Distance to Origin");
+    cout << "##  ( City # | Shortest distance to origin city )  ->  Shortest Path to Origin City" << endl;
+    GeneralPrintFunctions::PrintAllCityDistanceAndPathsToOrigin(this->closed_set_dijkstras);
+    printf(" | avg city distance to origin city %0.2f \n\n", this->avg_dist_dijkstras_);
+
+    GeneralPrintFunctions::PrintBox("Prim's Minimum Spanning Tree");
+    cout << "Branch # ( City # | Edge Lenth )  ->  MST Branch" << endl;
+    GeneralPrintFunctions::PrintMSTPathsToOrigin(this->closed_set_prims_mst);
+    printf(" | total mst length %d\n\n", this->total_dist_primsMst_);
+
     if (programming_error_found_in_Edge_EraseReadData)
         GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR FOUND", "programming_error_found_in_Edge_EraseReadData");
+
+    auto t4_print_to_terminal_time = high_resolution_clock::now();
+
+    auto file_read_time = duration_cast<microseconds>(t1_stop_read_file_time - t0_start_read_file_time);
+    auto populate_matrices_and_clear_edgeList_time = duration_cast<microseconds>(t2_populate_matrices_clear_edgeList_time - t1_stop_read_file_time);
+    auto graph_algorithms_time = duration_cast<microseconds>(t3_graph_algorithms_time - t2_populate_matrices_clear_edgeList_time);
+    auto print_to_terminal_time = duration_cast<microseconds>(t4_print_to_terminal_time - t3_graph_algorithms_time);
+
+    this->file_read_time_str = "file_read_time " + to_string(file_read_time.count()) + " microseconds";
+    this->populate_matrices_and_clear_edgeList_time_str = "populate_matrices_and_clear_edgeList_time " + to_string(populate_matrices_and_clear_edgeList_time.count()) + " microseconds";
+    this->graph_algorithms_time_str = "graph_algorithms_time " + to_string(graph_algorithms_time.count()) + " microseconds";
+    this->print_to_terminal_time_str = "print_to_terminal_time " + to_string(print_to_terminal_time.count()) + " microseconds";
 }
 
 //destructor
@@ -156,148 +189,115 @@ int CityGraph::GetNeighborDistance(int city_index, int neighbor_index)
 
 void CityGraph::DijkstrasAlgorithmImplementation()
 {
-    //define open set
-    //using priority_queue to learn how to use it
-    auto cmpFn = [](Neighbor left, Neighbor right) {return left.distance > right.distance; };
-    priority_queue<Neighbor, vector<Neighbor>, decltype(cmpFn)> open_set(cmpFn);
+    //define open set. Defining my own priority queue list to learn how to use it
+    MyPriorityQueue open_set;
 
     //define closed set
-    vector<Neighbor> closed_set;
+    vector<Neighbor>* closed_set_ptr = &(this->closed_set_dijkstras);
+
+    //track cities put into closed set
+    vector<bool> city_in_closed_set(this->get_size_(), false);
 
     //Step 1: add origin city to closed set
-    closed_set.push_back(Neighbor(0, 0));
+    closed_set_ptr->push_back(Neighbor(Neighbor::kOriginCityIndex, 0));
+    city_in_closed_set[Neighbor::kOriginCityIndex] = true;
 
     //Step 2: add neighbors of origin city to open set
-    vector<Neighbor> current_neighbors = this->GetNeighbors(0);
-    for (Neighbor neighbor_city : current_neighbors)
+    vector<Neighbor> current_neighbors = this->GetNeighbors(Neighbor::kOriginCityIndex);
+    for (Neighbor& neighbor_city : current_neighbors)
     {
-        neighbor_city.nearest_neighbor_index = 0;
+        neighbor_city.nearest_neighbor_index = Neighbor::kOriginCityIndex;
         open_set.push(neighbor_city);
     }
 
+    //loop over open set until it is empty
     while (open_set.size() > 0)
     {
         //Step 3: move nearest city, which is the top member of open set, to closed set. Call it current city.
-        Neighbor current_city = open_set.top();
-        open_set.pop();
-        closed_set.push_back(current_city);
+        Neighbor current_city = open_set.get_and_pop_top();
+
+        closed_set_ptr->push_back(current_city);
+        city_in_closed_set[current_city.index] = true;
 
         //Step 4: for each neighbor city of current city which is not in closed set
         current_neighbors = this->GetNeighbors(current_city.index);
+
         for (Neighbor neighbor_city : current_neighbors)
         {
-            bool found_neighbor_city_in_closed_set = false;
-            for (auto iterator : closed_set)
-                if (iterator.index == neighbor_city.index)
-                {
-                    found_neighbor_city_in_closed_set = true;
-                    break;
-                }
-
-            if (!found_neighbor_city_in_closed_set)
+            if (!city_in_closed_set[neighbor_city.index])
             {
                 //Step 4a: if neighbor city is in open set and its distance to origin city through current city is lower than its current distance to origin city, then update its distance to origin city and nearest neighbor index in open set
-                bool found_neighbor_city_in_open_set = false;
-                vector<Neighbor> open_set_temp;
-                while (!open_set.empty())
+                if (open_set.contains_index(neighbor_city.index))
                 {
-                    Neighbor open_set_top = open_set.top();
-                    if (open_set_top.index == neighbor_city.index)
+                    Neighbor* open_set_city_ptr = open_set.member_with_index(neighbor_city.index);
+                    if (current_city.distance + this->GetNeighborDistance(current_city.index, neighbor_city.index) < open_set_city_ptr->distance)
                     {
-                        found_neighbor_city_in_open_set = true;
-                        if (current_city.distance + this->GetNeighborDistance(current_city.index, neighbor_city.index) < open_set_top.distance)
-                        {
-                            open_set_top.distance = current_city.distance + this->GetNeighborDistance(current_city.index, neighbor_city.index);
-                            open_set_top.nearest_neighbor_index = current_city.index;
-                        }
+                        open_set_city_ptr->distance = current_city.distance + this->GetNeighborDistance(current_city.index, neighbor_city.index);
+                        open_set_city_ptr->nearest_neighbor_index = current_city.index;
+                        open_set.sort();
                     }
-                    open_set_temp.push_back(open_set_top);
-                    open_set.pop();
-                }
-                for (Neighbor open_set_temp_city : open_set_temp)
-                    open_set.push(open_set_temp_city);
 
-                //Step 4b: if did not find neighbor city in open set then add it to open set with nearest neighbor index as current city index
-                if (!found_neighbor_city_in_open_set)
+                }
+                else   //Step 4b: if did not find neighbor city in open set then add it to open set with nearest neighbor index as current city index
                 {
                     neighbor_city.nearest_neighbor_index = current_city.index;
                     neighbor_city.distance += current_city.distance;
                     open_set.push(neighbor_city);
                 }
-                //PrintOpenSet(open_set);
+                //open_set.print();
             }
         }
     }
     //dijkstras algoritm completed
 
     //calculate sum of distances of cities to origin city
-    for (Neighbor city : closed_set)
-        this->avg_dist_dijkstras_ += static_cast<float>(city.distance) / (closed_set.size() - 1);
+    for (Neighbor &city : *closed_set_ptr)
+        this->avg_dist_dijkstras_ += static_cast<float>(city.distance) / (closed_set_ptr->size() - 1);
 
-    GeneralPrintFunctions::PrintBox("Dijkstras Algorithm Nearest City Paths and Distance to Origin");
-    cout << "##  ( City # | Shortest distance to origin city )  ->  Shortest Path to Origin City" << endl;
-    GeneralPrintFunctions::PrintAllCityDistanceAndPathsToOrigin(closed_set);
-    printf(" | avg city distance to origin city %0.2f \n\n", this->avg_dist_dijkstras_);
 }
 
 void CityGraph::PrimsMinimumSpanningTreeAlgorithmImplementation()
 {
-    //define open set
-    //using priority_queue to learn how to use it
-    auto cmpFn = [](Neighbor left, Neighbor right) {return left.distance > right.distance; };
-    priority_queue<Neighbor, vector<Neighbor>, decltype(cmpFn)> open_set(cmpFn);
+    //define open set. Defining my own priority queue list to learn how to use it
+    MyPriorityQueue open_set;
 
     //define closed set
-    vector<Neighbor> closed_set;
+    vector<Neighbor>* closed_set_ptr = &(this->closed_set_prims_mst);
+
+    //track cities put into closed set
+    vector<bool> city_in_closed_set(this->get_size_(), false);
 
     //Step 1: Add all cities to Open Set. Distances of every city except origin city to be INT_MAX and origin city's distance is 0.
-    for (int i = 0; i < this->get_size_(); i++)
-        open_set.push(Neighbor(i, (i == 0 ? 0 : INT_MAX)));
-    
+    for (int id = Neighbor::kOriginCityIndex; id < this->get_size_(); id++)
+        open_set.push(Neighbor(id, (id == Neighbor::kOriginCityIndex ? 0 : INT_MAX)));
+
     while (open_set.size() > 0)
     {
         //Step 2: move nearest city, which is the top member of open set, to closed set. Call it current city.
-        Neighbor current_city = open_set.top();
-        open_set.pop();
-        closed_set.push_back(current_city);
+        Neighbor current_city = open_set.get_and_pop_top();
+
+        closed_set_ptr->push_back(current_city);
+        city_in_closed_set[current_city.index] = true;
 
         //Step 3: for each neighbor city of current city which is not in closed set
         vector<Neighbor> current_neighbors = this->GetNeighbors(current_city.index);
-        for (Neighbor neighbor_city : current_neighbors)
-        {
-            bool found_neighbor_city_in_closed_set = false;
-            for (auto iterator : closed_set)
-                if (iterator.index == neighbor_city.index)
-                {
-                    found_neighbor_city_in_closed_set = true;
-                    break;
-                }
 
-            if (!found_neighbor_city_in_closed_set)
+        for (Neighbor& neighbor_city : current_neighbors)
+        {
+            if (!city_in_closed_set[neighbor_city.index])
             {
                 //Step 4a: if neighbor city is in open set and its distance with current city is lower than its distance with its current neighbor city, then update its nearest neighbor as current city and distance as well in open set
-                bool found_neighbor_city_in_open_set = false;
-                vector<Neighbor> open_set_temp;
-                while (!open_set.empty())
+                if (open_set.contains_index(neighbor_city.index))
                 {
-                    Neighbor open_set_top = open_set.top();
-                    if (open_set_top.index == neighbor_city.index)
+                    Neighbor* open_set_city_ptr = open_set.member_with_index(neighbor_city.index);
+                    if (this->GetNeighborDistance(current_city.index, neighbor_city.index) < open_set_city_ptr->distance)
                     {
-                        found_neighbor_city_in_open_set = true;
-                        if (this->GetNeighborDistance(current_city.index, neighbor_city.index) < open_set_top.distance)
-                        {
-                            open_set_top.distance = this->GetNeighborDistance(current_city.index, neighbor_city.index);
-                            open_set_top.nearest_neighbor_index = current_city.index;
-                        }
+                        open_set_city_ptr->distance = this->GetNeighborDistance(current_city.index, neighbor_city.index);
+                        open_set_city_ptr->nearest_neighbor_index = current_city.index;
+                        open_set.sort();
                     }
-                    open_set_temp.push_back(open_set_top);
-                    open_set.pop();
                 }
-                for (Neighbor open_set_temp_city : open_set_temp)
-                    open_set.push(open_set_temp_city);
-
-                //Step 4b: if did not find neighbor city in open set then add this neighbor city to open set with nearest neighbor index as current city index
-                if (!found_neighbor_city_in_open_set)
+                else   //Step 4b: if did not find neighbor city in open set then add this neighbor city to open set with nearest neighbor index as current city index
                 {
                     neighbor_city.nearest_neighbor_index = current_city.index;
                     open_set.push(neighbor_city);
@@ -309,11 +309,7 @@ void CityGraph::PrimsMinimumSpanningTreeAlgorithmImplementation()
     //prim's algoritm completed
 
     //calculate sum of edges of MST
-    for (Neighbor city : closed_set)
-        this->total_dist_primsMst_ += static_cast<double>(city.distance);
+    for (Neighbor& city : *closed_set_ptr)
+        this->total_dist_primsMst_ += city.distance;
 
-    GeneralPrintFunctions::PrintBox("Prim's Minimum Spanning Tree");
-    cout << "Branch # ( City # | Edge Lenth )  ->  MST Branch" << endl;
-    GeneralPrintFunctions::PrintMSTPathsToOrigin(closed_set);
-    printf(" | total mst length %d\n\n", this->total_dist_primsMst_);
 }
