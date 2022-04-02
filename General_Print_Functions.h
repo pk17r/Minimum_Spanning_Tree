@@ -97,7 +97,7 @@ public:
             printf("%2d  ", city_count);
             std::cout << city;
             
-            if (city.nearest_neighbor_index == Neighbor::kIndexNull)    //already at origin so there is no path ahead
+            if (city.nearest_neighbor_id == Neighbor::kNullId)    //already at origin so there is no path ahead
             {
                 std::cout << std::endl;
                 continue;
@@ -113,7 +113,7 @@ public:
 
                 for (Neighbor city : closed_set)
                 {
-                    if (city.index == nearest_city.nearest_neighbor_index)
+                    if (city.id == nearest_city.nearest_neighbor_id)
                     {
                         nearest_city = city;
                         break;
@@ -123,7 +123,7 @@ public:
                 std::cout << " -> " << nearest_city;
 
                 cities_in_path++;
-            } while (nearest_city.nearest_neighbor_index > Neighbor::kIndexNull);
+            } while (nearest_city.nearest_neighbor_id > Neighbor::kNullId);
 
             std::cout << std::endl;
         }
@@ -145,36 +145,36 @@ public:
         std::list<std::list<Neighbor>> MST_Branches;
 
         //list of removed city indices
-        std::list<int> removed_city_indices;
+        std::list<int> removed_city_ids;
 
         //find the longest branch, remove it from openset and move it to MST_Branches
         while (open_set.size() != 0)
         {
             int max_cities_in_branch = -1;
             
-            int branch_leaf_city_index = Neighbor::kIndexNull;
+            int branch_leaf_city_id = Neighbor::kNullId;
 
-            for (Neighbor city : open_set)
+            for (Neighbor &city : open_set)
             {
                 int cities_in_path = 0;
                 Neighbor nearest_city = city;
                 do
                 {
-                    for (Neighbor next_city : open_set)
+                    for (Neighbor &next_city : open_set)
                     {
-                        if (next_city.index == nearest_city.nearest_neighbor_index)
+                        if (next_city.id == nearest_city.nearest_neighbor_id)
                         {
                             nearest_city = next_city;
                             break;
                         }
                     }
                     cities_in_path++;
-                } while (nearest_city.nearest_neighbor_index >= 0 && count(removed_city_indices.begin(), removed_city_indices.end(), nearest_city.nearest_neighbor_index) == 0);
+                } while (nearest_city.nearest_neighbor_id >= 0 && count(removed_city_ids.begin(), removed_city_ids.end(), nearest_city.nearest_neighbor_id) == 0);
 
                 if (cities_in_path > max_cities_in_branch)
                 {
                     max_cities_in_branch = cities_in_path;
-                    branch_leaf_city_index = city.index;
+                    branch_leaf_city_id = city.id;
                 }
             }
             //remove this path and add to MST_Branches
@@ -183,17 +183,17 @@ public:
             {
                 for (auto iterator = open_set.begin(); iterator != open_set.end(); iterator++)
                 {
-                    if (iterator->index == branch_leaf_city_index)
+                    if (iterator->id == branch_leaf_city_id)
                     {
                         //remove this
                         branch.push_back(*iterator);
-                        removed_city_indices.push_back(iterator->index);
-                        branch_leaf_city_index = iterator->nearest_neighbor_index;
+                        removed_city_ids.push_back(iterator->id);
+                        branch_leaf_city_id = iterator->nearest_neighbor_id;
                         open_set.erase(iterator);
                         break;
                     }
                 }
-            } while (branch_leaf_city_index >= 0 && count(removed_city_indices.begin(), removed_city_indices.end(), branch_leaf_city_index) == 0);
+            } while (branch_leaf_city_id >= 0 && count(removed_city_ids.begin(), removed_city_ids.end(), branch_leaf_city_id) == 0);
 
             MST_Branches.push_back(branch);
         }
@@ -206,46 +206,32 @@ public:
             
             //print shortest path to origin city
             int cities_in_path = 1;
-            int nearest_neighbor_index = Neighbor::kIndexNull;
-            for(Neighbor city : branch)
+            int nearest_neighbor_id = Neighbor::kNullId;
+            for(Neighbor &city : branch)
             {
                 std::cout << city;
                 
-                if (city.nearest_neighbor_index > Neighbor::kIndexNull)
+                if (city.nearest_neighbor_id > Neighbor::kNullId)
                     std::cout << " -> ";
 
-                nearest_neighbor_index = city.nearest_neighbor_index;
+                nearest_neighbor_id = city.nearest_neighbor_id;
                 
-                if (cities_in_path != 0 && cities_in_path % kMaxPrintCitiesToShowPerRow == 0 && nearest_neighbor_index != Neighbor::kIndexNull)
+                if (cities_in_path != 0 && cities_in_path % kMaxPrintCitiesToShowPerRow == 0 && nearest_neighbor_id != Neighbor::kNullId)
                     std::cout << "\n\t\t  -> ";
 
                 cities_in_path++;
             }
-            if (nearest_neighbor_index != Neighbor::kIndexNull)
+            if (nearest_neighbor_id != Neighbor::kNullId)
             {
-                if (nearest_neighbor_index > Neighbor::kOriginCityIndex)
-                    printf("(%2d )", nearest_neighbor_index);
+                if (nearest_neighbor_id > Neighbor::kOriginCityId)
+                    printf("(%2d )", nearest_neighbor_id);
                 else
-                    std::cout << Neighbor(Neighbor::kOriginCityIndex, 0);
+                    std::cout << Neighbor(Neighbor::kOriginCityId, 0);
             }
             std::cout << std::endl;
         }
         std::cout << "\nconnected cities " << closed_set.size();
         //no std::endl here so be sure to print something and end line or just end line
-    }
-
-    //Print function to print contents of open set priority queue
-    template <typename T>
-    static void PrintOpenSet(T p)
-    {
-        T q = p;
-        std::cout << "Open Set: ";
-        while (!q.empty())
-        {
-            std::cout << "\t(" << static_cast<Neighbor>(q.top()).index << "|" << static_cast<Neighbor>(q.top()).distance << ")";
-            q.pop();
-        }
-        std::cout << std::endl;
     }
 
 };

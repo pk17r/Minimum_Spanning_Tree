@@ -24,9 +24,9 @@ void CityGraph::InitializeCityMatrices()
     city_connectivity_matrix_ = new bool* [size_];
     city_distance_matrix_ = new int* [size_];
     //allocate column pointers
-    for (int i = 0; i < size_; i++) {
-        city_connectivity_matrix_[i] = new bool[size_];
-        city_distance_matrix_[i] = new int[size_];
+    for (int id = 0; id < size_; id++) {
+        city_connectivity_matrix_[id] = new bool[size_];
+        city_distance_matrix_[id] = new int[size_];
     }
     //initialize default values
     for (int i = 0; i < size_; i++)
@@ -51,11 +51,6 @@ static string FormatThousandSeparators(string input_str)
     int digits = input_str.size();
     int counter = 1;
     reverse(input_str.begin(), input_str.end());
-    //if (digits > 3)
-    //    input_str.insert(3,",");
-    //if (digits > 6)
-    //    input_str.insert(7, ",");
-    //
     while (digits > 3 * counter)
     {
         input_str.insert(3 * counter + counter - 1, ",");
@@ -203,23 +198,23 @@ void CityGraph::PrintCityGraphMatrix(bool print_connectivity_matrix)
     }
 }
 
-vector<Neighbor> CityGraph::GetNeighbors(int city_index)
+vector<Neighbor> CityGraph::GetNeighbors(int city_id)
 {
     vector<Neighbor> neighbors_list;
-    for (int i = 0; i < size_; i++)
+    for (int id = 0; id < size_; id++)
     {
-        if (city_connectivity_matrix_[city_index][i])
+        if (city_connectivity_matrix_[city_id][id])
         {
-            Neighbor neighbor = Neighbor(i, city_distance_matrix_[city_index][i]);
+            Neighbor neighbor = Neighbor(id, city_distance_matrix_[city_id][id]);
             neighbors_list.push_back(neighbor);
         }
     }
     return neighbors_list;
 }
 
-int CityGraph::GetNeighborDistance(int city_index, int neighbor_index)
+int CityGraph::GetNeighborDistance(int city_id, int neighbor_id)
 {
-    return city_distance_matrix_[city_index][neighbor_index];
+    return city_distance_matrix_[city_id][neighbor_id];
 }
 
 void CityGraph::DijkstrasAlgorithmImplementation()
@@ -234,14 +229,14 @@ void CityGraph::DijkstrasAlgorithmImplementation()
     vector<bool> city_in_closed_set(this->get_size_(), false);
 
     //Step 1: add origin city to closed set
-    closed_set_ptr->push_back(Neighbor(Neighbor::kOriginCityIndex, 0));
-    city_in_closed_set[Neighbor::kOriginCityIndex] = true;
+    closed_set_ptr->push_back(Neighbor(Neighbor::kOriginCityId, 0));
+    city_in_closed_set[Neighbor::kOriginCityId] = true;
 
     //Step 2: add neighbors of origin city to open set
-    vector<Neighbor> current_neighbors = this->GetNeighbors(Neighbor::kOriginCityIndex);
+    vector<Neighbor> current_neighbors = this->GetNeighbors(Neighbor::kOriginCityId);
     for (Neighbor& neighbor_city : current_neighbors)
     {
-        neighbor_city.nearest_neighbor_index = Neighbor::kOriginCityIndex;
+        neighbor_city.nearest_neighbor_id = Neighbor::kOriginCityId;
         open_set.push(neighbor_city);
     }
 
@@ -252,30 +247,30 @@ void CityGraph::DijkstrasAlgorithmImplementation()
         Neighbor current_city = open_set.get_and_pop_top();
 
         closed_set_ptr->push_back(current_city);
-        city_in_closed_set[current_city.index] = true;
+        city_in_closed_set[current_city.id] = true;
 
         //Step 4: for each neighbor city of current city which is not in closed set
-        current_neighbors = this->GetNeighbors(current_city.index);
+        current_neighbors = this->GetNeighbors(current_city.id);
 
         for (Neighbor neighbor_city : current_neighbors)
         {
-            if (!city_in_closed_set[neighbor_city.index])
+            if (!city_in_closed_set[neighbor_city.id])
             {
-                //Step 4a: if neighbor city is in open set and its distance to origin city through current city is lower than its current distance to origin city, then update its distance to origin city and nearest neighbor index in open set
-                if (open_set.contains_index(neighbor_city.index))
+                //Step 4a: if neighbor city is in open set and its distance to origin city through current city is lower than its current distance to origin city, then update its distance to origin city and nearest neighbor id in open set
+                if (open_set.contains_id(neighbor_city.id))
                 {
-                    Neighbor* open_set_city_ptr = open_set.member_with_index(neighbor_city.index);
-                    if (current_city.distance + this->GetNeighborDistance(current_city.index, neighbor_city.index) < open_set_city_ptr->distance)
+                    Neighbor* open_set_city_ptr = open_set.member_with_id(neighbor_city.id);
+                    if (current_city.distance + this->GetNeighborDistance(current_city.id, neighbor_city.id) < open_set_city_ptr->distance)
                     {
-                        open_set_city_ptr->distance = current_city.distance + this->GetNeighborDistance(current_city.index, neighbor_city.index);
-                        open_set_city_ptr->nearest_neighbor_index = current_city.index;
+                        open_set_city_ptr->distance = current_city.distance + this->GetNeighborDistance(current_city.id, neighbor_city.id);
+                        open_set_city_ptr->nearest_neighbor_id = current_city.id;
                         open_set.sort();
                     }
 
                 }
-                else   //Step 4b: if did not find neighbor city in open set then add it to open set with nearest neighbor index as current city index
+                else   //Step 4b: if did not find neighbor city in open set then add it to open set with nearest neighbor id as current city id
                 {
-                    neighbor_city.nearest_neighbor_index = current_city.index;
+                    neighbor_city.nearest_neighbor_id = current_city.id;
                     neighbor_city.distance += current_city.distance;
                     open_set.push(neighbor_city);
                 }
@@ -303,8 +298,8 @@ void CityGraph::PrimsMinimumSpanningTreeAlgorithmImplementation()
     vector<bool> city_in_closed_set(this->get_size_(), false);
 
     //Step 1: Add all cities to Open Set. Distances of every city except origin city to be INT_MAX and origin city's distance is 0.
-    for (int id = Neighbor::kOriginCityIndex; id < this->get_size_(); id++)
-        open_set.push(Neighbor(id, (id == Neighbor::kOriginCityIndex ? 0 : INT_MAX)));
+    for (int id = Neighbor::kOriginCityId; id < this->get_size_(); id++)
+        open_set.push(Neighbor(id, (id == Neighbor::kOriginCityId ? 0 : INT_MAX)));
 
     while (open_set.size() > 0)
     {
@@ -312,29 +307,29 @@ void CityGraph::PrimsMinimumSpanningTreeAlgorithmImplementation()
         Neighbor current_city = open_set.get_and_pop_top();
 
         closed_set_ptr->push_back(current_city);
-        city_in_closed_set[current_city.index] = true;
+        city_in_closed_set[current_city.id] = true;
 
         //Step 3: for each neighbor city of current city which is not in closed set
-        vector<Neighbor> current_neighbors = this->GetNeighbors(current_city.index);
+        vector<Neighbor> current_neighbors = this->GetNeighbors(current_city.id);
 
         for (Neighbor& neighbor_city : current_neighbors)
         {
-            if (!city_in_closed_set[neighbor_city.index])
+            if (!city_in_closed_set[neighbor_city.id])
             {
                 //Step 4a: if neighbor city is in open set and its distance with current city is lower than its distance with its current neighbor city, then update its nearest neighbor as current city and distance as well in open set
-                if (open_set.contains_index(neighbor_city.index))
+                if (open_set.contains_id(neighbor_city.id))
                 {
-                    Neighbor* open_set_city_ptr = open_set.member_with_index(neighbor_city.index);
-                    if (this->GetNeighborDistance(current_city.index, neighbor_city.index) < open_set_city_ptr->distance)
+                    Neighbor* open_set_city_ptr = open_set.member_with_id(neighbor_city.id);
+                    if (this->GetNeighborDistance(current_city.id, neighbor_city.id) < open_set_city_ptr->distance)
                     {
-                        open_set_city_ptr->distance = this->GetNeighborDistance(current_city.index, neighbor_city.index);
-                        open_set_city_ptr->nearest_neighbor_index = current_city.index;
+                        open_set_city_ptr->distance = this->GetNeighborDistance(current_city.id, neighbor_city.id);
+                        open_set_city_ptr->nearest_neighbor_id = current_city.id;
                         open_set.sort();
                     }
                 }
-                else   //Step 4b: if did not find neighbor city in open set then add this neighbor city to open set with nearest neighbor index as current city index
+                else   //Step 4b: if did not find neighbor city in open set then add this neighbor city to open set with nearest neighbor id as current city id
                 {
-                    neighbor_city.nearest_neighbor_index = current_city.index;
+                    neighbor_city.nearest_neighbor_id = current_city.id;
                     open_set.push(neighbor_city);
                 }
                 //PrintOpenSet(open_set);

@@ -16,9 +16,9 @@ public:
 
 	Neighbor get_and_pop_top();
 
-	bool contains_index(int index);
+	bool contains_id(int id);
 
-	Neighbor* member_with_index(int index);
+	Neighbor* member_with_id(int id);
 
 	void sort();
 

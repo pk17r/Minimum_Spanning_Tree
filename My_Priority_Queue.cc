@@ -30,21 +30,21 @@ Neighbor MyPriorityQueue::get_and_pop_top()
 	return city;
 }
 
-bool MyPriorityQueue::contains_index(int index)
+bool MyPriorityQueue::contains_id(int id)
 {
 	for (Neighbor city : my_list_)
 	{
-		if (city.index == index)
+		if (city.id == id)
 			return true;
 	}
 	return false;
 }
 
-Neighbor* MyPriorityQueue::member_with_index(int index)
+Neighbor* MyPriorityQueue::member_with_id(int id)
 {
 	for (Neighbor &city : my_list_)
 	{
-		if (city.index == index)
+		if (city.id == id)
 		{
 			return &city;
 		}
@@ -66,6 +66,6 @@ int MyPriorityQueue::size()
 void MyPriorityQueue::print()
 {
 	cout << "Open Set: ";
-	for_each(my_list_.cbegin(), my_list_.cend(), [](Neighbor city) { cout << "\t(" << city.index << "|" << city.distance << ")"; });
+	for_each(my_list_.cbegin(), my_list_.cend(), [](Neighbor city) { cout << "\t(" << city.id << "|" << city.distance << ")"; });
 	cout << endl;
 }

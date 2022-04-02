@@ -3,17 +3,17 @@
 using namespace std;
 
 //defining constructors here itself
-Neighbor::Neighbor(int index, int distance)
+Neighbor::Neighbor(int id, int distance)
 {
-    this->index = index;
-    this->nearest_neighbor_index = kIndexNull;
+    this->id = id;
+    this->nearest_neighbor_id = kNullId;
     this->distance = distance;
 }
 
-Neighbor::Neighbor(int index, int nearest_neighbor_index, int distance)
+Neighbor::Neighbor(int id, int nearest_neighbor_id, int distance)
 {
-    this->index = index;
-    this->nearest_neighbor_index = nearest_neighbor_index;
+    this->id = id;
+    this->nearest_neighbor_id = nearest_neighbor_id;
     this->distance = distance;
 }
 
@@ -21,10 +21,10 @@ Neighbor::Neighbor(int index, int nearest_neighbor_index, int distance)
 //https://docs.microsoft.com/en-us/cpp/standard-library/overloading-the-output-operator-for-your-own-classes?view=msvc-170
 std::ostream& operator<<(std::ostream& os, const Neighbor& city)
 {
-    if (city.nearest_neighbor_index >= 0)
+    if (city.nearest_neighbor_id >= 0)
     {
         char formatted_char_array[9];
-        snprintf(formatted_char_array, 9, "(%2d |%2d)", city.index, city.distance);
+        snprintf(formatted_char_array, 9, "(%2d |%2d)", city.id, city.distance);
         os << formatted_char_array;
     }
     else

@@ -24,9 +24,9 @@ public:
 
     int get_size_();
 
-    int GetNeighborDistance(int cityIndex, int neighborIndex);
+    int GetNeighborDistance(int city_id, int neighbor_id);
 
-    std::vector<Neighbor> GetNeighbors(int cityIndex);
+    std::vector<Neighbor> GetNeighbors(int city_id);
 
 private:
     bool** city_connectivity_matrix_;
