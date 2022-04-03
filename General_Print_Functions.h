@@ -2,6 +2,7 @@
 #define GENERAL_PRINT_FUNCTIONS_H_
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <list>
 #include <string>
@@ -11,6 +12,43 @@
 class GeneralPrintFunctions
 {
 public:
+
+    template<typename T>
+    static std::string FormatSmallNumber(const char* formatter, T number, int size)
+    {
+        char char_arr[20];
+        snprintf(char_arr, size+1, formatter, number);
+        return std::string(char_arr);
+    }
+
+    static std::string FormatThousandSeparators(std::string input_str)
+    {
+        int digits = static_cast<int>(input_str.size());
+        int counter = 1;
+        reverse(input_str.begin(), input_str.end());
+        while (digits > 3 * counter)
+        {
+            input_str.insert(3 * counter + counter - 1, ",");
+            counter++;
+        }
+        input_str.resize(15, ' ');
+        reverse(input_str.begin(), input_str.end());
+        return input_str;
+    }
+
+    static std::string CalculateTimeTaken(std::string description, std::chrono::high_resolution_clock::time_point t0, std::chrono::high_resolution_clock::time_point t1)
+    {
+        description.resize(50, ' ');
+        description += ":";
+        auto time_span = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
+        double time_difference = static_cast<double>(time_span.count());
+        const int digits_in_time = 15;
+        char time_difference_char_arr[digits_in_time];
+        snprintf(time_difference_char_arr, digits_in_time, "%.0f", time_difference);
+        std::string time_difference_string(time_difference_char_arr);
+        return description + FormatThousandSeparators(time_difference_string) + " microseconds";
+    }
+
     //Print function to print headings and heading with content_string
     static void PrintBox(const std::string& heading, std::vector<std::string>* content_vector_ptr, bool error)
     {
@@ -37,15 +75,15 @@ public:
         border_line.append(identifier);
         empty_line.append(identifier);
 
-        std::cout << std::endl << std::endl;
-        std::cout << border_line << std::endl;
-        std::cout << empty_line << std::endl;
+        std::cout << "\n\n";
+        std::cout << border_line << '\n';
+        std::cout << empty_line << '\n';
         std::cout << identifier;
         for (int i = 0; i < side_banner_size + (content_box_size - header_size) / 2; i++) std::cout << " ";
         std::cout << heading << (heading.size() % 2 == 1 ? " " : "");
         for (int i = 0; i < side_banner_size + (content_box_size - header_size) / 2; i++) std::cout << " ";
-        std::cout << identifier << std::endl;
-        std::cout << empty_line << std::endl;
+        std::cout << identifier << '\n';
+        std::cout << empty_line << '\n';
         if (content_vector_ptr != NULL)
         {
             for (auto content_string : *content_vector_ptr)
@@ -54,12 +92,11 @@ public:
                 for (int i = 0; i < side_banner_size + (content_box_size - static_cast<int>(content_string.size())) / 2; i++) std::cout << " ";
                 std::cout << content_string << (content_string.size() % 2 == 1 ? " " : "");;
                 for (int i = 0; i < side_banner_size + (content_box_size - static_cast<int>(content_string.size())) / 2; i++) std::cout << " ";
-                std::cout << identifier << std::endl;
-                std::cout << empty_line << std::endl;
+                std::cout << identifier << '\n';
+                std::cout << empty_line << '\n';
             }
         }
-        std::cout << border_line << std::endl;
-        std::cout << std::endl;
+        std::cout << border_line << "\n\n";
     }
 
     static void PrintBox(const std::string& heading, std::vector<std::string> *content_vector_ptr)
@@ -82,6 +119,7 @@ public:
     {
         std::vector<std::string> content_vector{ content };
         PrintBox(heading, &content_vector, true);
+        std::cout << std::flush;    //flushing output similar to cerr as this is error message
     }
 
     static const int kMaxPrintCitiesToShowPerRow = 6;
@@ -89,17 +127,18 @@ public:
     //Print function to print all city distances and paths to origin city
     static void PrintAllCityDistanceAndPathsToOrigin(const std::vector<Neighbor>& closed_set)
     {
+        std::cout << '\n';
         int city_count = 0;
         for (Neighbor city : closed_set)
         {
             //print city and distance to origin
             ++city_count;
-            printf("%2d  ", city_count);
-            std::cout << city;
+            std::cout << GeneralPrintFunctions::FormatSmallNumber<int>("%2d", city_count, 2);
+            std::cout << "  " << city;
             
             if (city.nearest_neighbor_id == Neighbor::kNullId)    //already at origin so there is no path ahead
             {
-                std::cout << std::endl;
+                std::cout << '\n';
                 continue;
             }
 
@@ -125,7 +164,7 @@ public:
                 cities_in_path++;
             } while (nearest_city.nearest_neighbor_id > Neighbor::kNullId);
 
-            std::cout << std::endl;
+            std::cout << '\n';
         }
 
         std::cout << "\nconnected cities " << closed_set.size();
@@ -135,6 +174,8 @@ public:
     //Print function to print all city distances and paths to origin city
     static void PrintMSTPathsToOrigin(const std::vector<Neighbor>& closed_set)
     {
+        std::cout << '\n';
+
         std::list<Neighbor> open_set;
 
         //push all MST nodes to open_set
@@ -202,7 +243,7 @@ public:
         for (std::list<Neighbor> branch : MST_Branches)
         {
             ++branch_count;
-            printf("   %2d    ", branch_count);
+            std::cout << "   " << GeneralPrintFunctions::FormatSmallNumber<int>("%2d", branch_count, 2) << "    ";
             
             //print shortest path to origin city
             int cities_in_path = 1;
@@ -224,11 +265,11 @@ public:
             if (nearest_neighbor_id != Neighbor::kNullId)
             {
                 if (nearest_neighbor_id > Neighbor::kOriginCityId)
-                    printf("(%2d )", nearest_neighbor_id);
+                    std::cout << "(" << GeneralPrintFunctions::FormatSmallNumber<int>("%2d", nearest_neighbor_id, 2) << " )";
                 else
                     std::cout << Neighbor(Neighbor::kOriginCityId, 0);
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
         std::cout << "\nconnected cities " << closed_set.size();
         //no std::endl here so be sure to print something and end line or just end line

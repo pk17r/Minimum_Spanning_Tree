@@ -24,7 +24,7 @@ public:
 
 	int size();
 
-	void print();
+	void print();		//made for debugging usage
 
 private:
 	std::list<Neighbor> my_list_;

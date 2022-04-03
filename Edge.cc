@@ -1,30 +1,28 @@
-#include <fstream>
 #include <iostream>
 #include <list>
 #include <sstream>
-#include <string>
 #include <vector>
 #include "Edge.h"
 #include "General_Print_Functions.h"
 
 using namespace std;
 
-//static variables
-static int times_Edge_default_constructor_is_called = 0;
-static int times_Edge_string_input_constructor_is_called = 0;
-static int times_Edge_copy_constructor_is_called = 0;
-static int times_Edge_default_destructor_is_called = 0;
+//initializing static members of struct Edge to zero
+int Edge::times_Edge_default_constructor_is_called = 0;
+int Edge::times_Edge_string_input_constructor_is_called = 0;
+int Edge::times_Edge_copy_constructor_is_called = 0;
+int Edge::times_Edge_default_destructor_is_called = 0;
 
 //default constructor
-Edge::Edge() { times_Edge_default_constructor_is_called++; }
+Edge::Edge() { Edge::times_Edge_default_constructor_is_called++; }
 
 //default destructor
-Edge::~Edge() { times_Edge_default_destructor_is_called++; }
+Edge::~Edge() { Edge::times_Edge_default_destructor_is_called++; }
 
 //constructor created to load data from string lines in input file
 Edge::Edge(string& str)
 {
-    times_Edge_string_input_constructor_is_called++;
+    Edge::times_Edge_string_input_constructor_is_called++;
     /* Storing the whole string into string stream */
     stringstream ss;
     ss << str;
@@ -55,8 +53,8 @@ Edge::Edge(string& str)
 //https://stackoverflow.com/questions/515071/destructor-called-on-object-when-adding-it-to-stdlist
 Edge::Edge(Edge const& edge) : node_A(edge.node_A), node_B(edge.node_B), distance(edge.distance)
 {
-    times_Edge_copy_constructor_is_called++;
-    cout << "Copy Constructor Edge(Edge const& edge)" << *this << endl;
+    Edge::times_Edge_copy_constructor_is_called++;
+    cout << "Copy Constructor Edge(Edge const& edge)" << *this << '\n';
 }
 
 //friend allows the << operator to have access to information in the object so it can overload normal cout <<.
@@ -65,51 +63,4 @@ ostream& operator<<(ostream& os, const Edge& edge)
 {
     os << "(" << edge.node_A << ", " << edge.node_B << ", " << edge.distance << ")";
     return os;
-}
-
-//defining a static read data function to be called from CityGraph class
-int Edge::ReadData(string& data_file_name, list<Edge*>& edgeList)
-{
-    GeneralPrintFunctions::PrintBox("Read Data from File");
-    cout << "Reading file: " << data_file_name << endl;
-    ifstream dataFile(data_file_name);
-    istreambuf_iterator<char> start_of_file(dataFile), end_of_file;
-    string buffer;
-    int graph_size = -1;
-    while (start_of_file != end_of_file)
-    {
-        buffer += *start_of_file;
-        if (*start_of_file == '\n')
-        {
-            if (graph_size == -1)
-                graph_size = stoi(buffer);
-            else
-                edgeList.push_back(new Edge(buffer));
-            buffer.clear();
-        }
-        ++start_of_file;
-    }
-    cout << "Graph Size: " << graph_size << endl;
-    cout << "Size of edge_list: " << edgeList.size() << endl;
-    cout << "First Edge: " << *edgeList.front() << endl;
-    cout << "Last Edge: " << *edgeList.back() << endl;
-    return graph_size;
-}
-
-//static function to erase Edge data from memory
-void Edge::EraseReadData(list<Edge*>& edge_list)
-{
-    for (auto edge : edge_list)
-        delete edge;
-
-    edge_list.clear();
-
-    //a check for memory leaks and copy constructor calls
-    if (times_Edge_default_destructor_is_called == times_Edge_string_input_constructor_is_called
-        && times_Edge_default_constructor_is_called == 0
-        && times_Edge_copy_constructor_is_called == 0)
-        cout << "Data read from input file efficiently and read data container cleared without memory leaks" << endl;
-    else
-        GeneralPrintFunctions::PrintErrorBox("PROGRAMMING ERROR in EDGE.CC", "Data NOT read from input file efficiently and read data container cleared without memory leaks");
-
 }

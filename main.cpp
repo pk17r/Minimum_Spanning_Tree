@@ -10,6 +10,8 @@
 // 
 
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string>
 #include "City_Graph.h"
 #include "General_Print_Functions.h"
@@ -18,6 +20,10 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+    //disable automatic cout flush to terminal
+    ios::sync_with_stdio(false);
+    setvbuf(stdout, nullptr, _IOFBF, BUFSIZ);
+
     vector<string> contents
     {
         "- Pass a single argument 'test' to run test data",
@@ -25,18 +31,20 @@ int main(int argc, char* argv[])
     };
     GeneralPrintFunctions::PrintBox("Graph Algorithms", &contents);
 
-    bool run_test_data = false;
+    string data_file_name = "cplusplus4c_homeworks_Homework3_SampleTestData_mst_data.txt";
+
     if (argc == 2)
     {
-        cout << "Argument passed: " << argv[1] << endl;
+        cout << "Argument passed: " << argv[1] << '\n';
         if (string(argv[1]) == "test")
-            run_test_data = true;
+            data_file_name = "testDataSet.txt";
         else
-            cout << "Unrecognized argument" << endl;
+            cout << "Unrecognized argument" << '\n';
     }
 
-    //CityGraph object calling explicitly defined constructor which runs all program steps
-    CityGraph city_graph_object(run_test_data);
+    cout << flush;
+    
+    CityGraph city_graph_object(data_file_name);        //CityGraph object calling constructor which runs all program steps
 
     //lambda function to print float as a formatted string
     auto float_to_formatted_string_lambda_fn = [](float avg_dist)
@@ -55,6 +63,7 @@ int main(int argc, char* argv[])
     
     contents = vector<string>
     {
+        "Input data file: " + data_file_name,
         "Prims's Minimum Spanning Tree Length: " + to_string(city_graph_object.total_dist_primsMst_),
         "Dijkstra's Algorithm Average Distance to Origin: " + float_to_formatted_string_lambda_fn(city_graph_object.avg_dist_dijkstras_),
         "",
@@ -64,5 +73,7 @@ int main(int argc, char* argv[])
     //print results
     GeneralPrintFunctions::PrintBox("RESULTS", &contents);
     
+    cout << flush;
+
     return 0;
 }
