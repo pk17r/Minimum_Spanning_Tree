@@ -49,8 +49,8 @@ public:
         return description + FormatThousandSeparators(time_difference_string) + " microseconds";
     }
 
-    //Print function to print headings and heading with content_string
-    static void PrintBox(const std::string& heading, std::vector<std::string>* content_vector_ptr, bool error)
+    //Genralized Print Function to print headings and content
+    static void PrintBox(const std::string& heading, std::vector<std::string>* content_vector_ptr, bool error, bool no_newlines_in_content)
     {
         std::string identifier = error ? "!" : "*";
 
@@ -64,7 +64,7 @@ public:
                     largest_content_string_size = static_cast<int>(content_string.size());
         
         int content_box_size = std::max(header_size, (largest_content_string_size + largest_content_string_size % 2));
-        int side_banner_size = 5;
+        static const int side_banner_size = 5;
         std::string border_line = identifier;
         std::string empty_line = identifier;
         for (int i = 0; i < side_banner_size + content_box_size + side_banner_size; i++)
@@ -93,36 +93,41 @@ public:
                 std::cout << content_string << (content_string.size() % 2 == 1 ? " " : "");;
                 for (int i = 0; i < side_banner_size + (content_box_size - static_cast<int>(content_string.size())) / 2; i++) std::cout << " ";
                 std::cout << identifier << '\n';
-                std::cout << empty_line << '\n';
+                if(!no_newlines_in_content) std::cout << empty_line << '\n';
             }
         }
         std::cout << border_line << "\n\n";
     }
 
+    //static void PrintBox(bool no_newlines_in_content, const std::string& heading, std::vector<std::string>* content_vector_ptr)
+    //{
+    //    PrintBox(heading, content_vector_ptr, false, no_newlines_in_content);
+    //}
+
     static void PrintBox(const std::string& heading, std::vector<std::string> *content_vector_ptr)
     {
-        PrintBox(heading, content_vector_ptr, false);
+        PrintBox(heading, content_vector_ptr, false, false);
     }
 
     static void PrintBox(const std::string& heading, const std::string& content)
     {
         std::vector<std::string> content_vector { content };
-        PrintBox(heading, &content_vector, false);
+        PrintBox(heading, &content_vector, false, false);
     }
 
     static void PrintBox(const std::string& heading)
     {
-        PrintBox(heading, NULL, false);
+        PrintBox(heading, NULL, false, false);
     }
 
     static void PrintErrorBox(const std::string& heading, const std::string& content)
     {
         std::vector<std::string> content_vector{ content };
-        PrintBox(heading, &content_vector, true);
+        PrintBox(heading, &content_vector, true, false);
         std::cout << std::flush;    //flushing output similar to cerr as this is error message
     }
 
-    static const int kMaxPrintCitiesToShowPerRow = 6;
+    static const int kMaxPrintCitiesToShowPerRow = 9;
 
     //Print function to print all city distances and paths to origin city
     static void PrintAllCityDistanceAndPathsToOrigin(const std::vector<Neighbor>& closed_set)
@@ -183,12 +188,12 @@ public:
             open_set.push_back(city);
 
         //list to store MST branches
-        std::list<std::list<Neighbor>> MST_Branches;
+        std::list<std::list<Neighbor>> MST_Branches_Tree;
 
         //list of removed city indices
         std::list<int> removed_city_ids;
 
-        //find the longest branch, remove it from openset and move it to MST_Branches
+        //untill open_set is empty, find its longest former_branch, remove it from openset and move it to MST_Branches_Tree
         while (open_set.size() != 0)
         {
             int max_cities_in_branch = -1;
@@ -218,7 +223,7 @@ public:
                     branch_leaf_city_id = city.id;
                 }
             }
-            //remove this path and add to MST_Branches
+            //remove this path and add to MST_Branches_Tree
             std::list<Neighbor> branch;
             do
             {
@@ -236,14 +241,43 @@ public:
                 }
             } while (branch_leaf_city_id >= 0 && count(removed_city_ids.begin(), removed_city_ids.end(), branch_leaf_city_id) == 0);
 
-            MST_Branches.push_back(branch);
+            MST_Branches_Tree.push_back(branch);
         }
 
+        // Compress Tree
+        // 
+        // some branches can be combined if their leaf node's nearest_neighbor_id is equal to first node in another former_branch
+        // here add the found latter_branch to end of former_branch and erase latter_branch from the tree.
+        // Do this untill no change is observed in the tree.
+        
+        bool branches_combined_in_this_run = true;
+
+        while (branches_combined_in_this_run)
+        {
+            branches_combined_in_this_run = false;
+
+            for (auto &former_branch : MST_Branches_Tree)
+            {
+                for (auto latter_branch_iterator = MST_Branches_Tree.begin(); latter_branch_iterator != MST_Branches_Tree.end(); latter_branch_iterator++)
+                {
+                    if (former_branch.back().nearest_neighbor_id == latter_branch_iterator->front().id)
+                    {
+                        //former_branch.merge(latter_branch);
+                        former_branch.insert(former_branch.end(), latter_branch_iterator->begin(), latter_branch_iterator->end());
+                        branches_combined_in_this_run = true;
+                        MST_Branches_Tree.erase(latter_branch_iterator);
+                        break;
+                    }
+                }
+            }
+        }
+
+        //print MST Branches
         int branch_count = 0;
-        for (std::list<Neighbor> branch : MST_Branches)
+        for (std::list<Neighbor> branch : MST_Branches_Tree)
         {
             ++branch_count;
-            std::cout << "   " << GeneralPrintFunctions::FormatSmallNumber<int>("%2d", branch_count, 2) << "    ";
+            std::cout << GeneralPrintFunctions::FormatSmallNumber<int>("%2d", branch_count, 2) << "  ";
             
             //print shortest path to origin city
             int cities_in_path = 1;

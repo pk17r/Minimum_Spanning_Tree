@@ -12,7 +12,7 @@ public:
 
     int distance = -1;
 
-    //static variables
+    //static variables to note how many times each constructor is being called
     static int times_Edge_default_constructor_is_called;
     static int times_Edge_string_input_constructor_is_called;
     static int times_Edge_copy_constructor_is_called;
